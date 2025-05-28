@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "156179415756",
+    "firebase_url": "https://growagardennotifier-960f7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "growagardennotifier-960f7",
+    "storage_bucket": "growagardennotifier-960f7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156179415756:android:69234da7bf7a962086f869",
+        "android_client_info": {
+          "package_name": "com.dainsleif.gaggy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAQiFI4aJgEd_R1-LNhisZY7_Qi3dqgJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156179415756:android:1a28c42d317043db86f869",
+        "android_client_info": {
+          "package_name": "com.dainsleif.gagy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAQiFI4aJgEd_R1-LNhisZY7_Qi3dqgJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
