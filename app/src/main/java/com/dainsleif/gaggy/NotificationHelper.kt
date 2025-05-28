@@ -1,10 +1,12 @@
 package com.dainsleif.gaggy
 
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -14,14 +16,18 @@ import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import android.util.Log
+import android.Manifest
 
 class NotificationHelper private constructor(private val context: Context) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     
     companion object {
         const val ACTION_STOP_NOTIFICATION = "com.dainsleif.gaggy.STOP_NOTIFICATION"
+        const val PERMISSION_REQUEST_NOTIFICATION = 1001
         // Static MediaPlayer instance shared across all instances
         private var mediaPlayer: MediaPlayer? = null
         // Singleton instance
@@ -35,8 +41,40 @@ class NotificationHelper private constructor(private val context: Context) {
             }
         }
     }
+
+    // Check if notification permission is granted
+    fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            // For versions below Android 13, notification permission was granted by default
+            true
+        }
+    }
+
+    // Request notification permission
+    fun requestNotificationPermission(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!hasNotificationPermission()) {
+                ActivityCompat.requestPermissions(
+                    activity,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    PERMISSION_REQUEST_NOTIFICATION
+                )
+            }
+        }
+    }
     
     fun createGearNotification(gearName: String, quantity: Int) {
+        // Check notification permission first
+        if (!hasNotificationPermission()) {
+            Log.w("NotificationHelper", "Notification permission not granted")
+            return
+        }
+        
         Log.d("NotificationHelper", "Creating notification for $gearName")
         
         // First, stop any existing notifications to prevent double sound
@@ -123,6 +161,12 @@ class NotificationHelper private constructor(private val context: Context) {
     }
     
     fun createSeedNotification(seedName: String, quantity: Int) {
+        // Check notification permission first
+        if (!hasNotificationPermission()) {
+            Log.w("NotificationHelper", "Notification permission not granted")
+            return
+        }
+        
         Log.d("NotificationHelper", "Creating notification for seed: $seedName")
         
         // First, stop any existing notifications to prevent double sound

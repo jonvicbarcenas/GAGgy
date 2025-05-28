@@ -1,6 +1,9 @@
 package com.dainsleif.gaggy
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -24,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var eggsLayout: LinearLayout
     private lateinit var lastUpdatedTextView: TextView
     private lateinit var notificationsButton: Button
+    private lateinit var notificationHelper: NotificationHelper
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +40,15 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         
-        // Request to disable battery optimization
+        // Initialize notification helper
+        notificationHelper = NotificationHelper.getInstance(this)
+        
+        // Create notification channels
+        createNotificationChannels()
+        
+        // Request permissions
         requestBatteryOptimizationExemption()
+        requestNotificationPermission()
         
         // Initialize UI components
         seedsLayout = findViewById(R.id.seedsLayout)
@@ -64,6 +76,79 @@ class MainActivity : AppCompatActivity() {
                 // Handle database error
             }
         })
+    }
+    
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            
+            // Check if channels already exist
+            val existingChannels = notificationManager.notificationChannels
+            val hasGearChannel = existingChannels.any { it.id == "gear_channel" }
+            val hasSeedChannel = existingChannels.any { it.id == "seed_channel" }
+            
+            // Only create channels if they don't exist
+            if (!hasGearChannel || !hasSeedChannel) {
+                // Notification settings activity will create them
+                val intent = Intent(this, NotificationSettingsActivity::class.java)
+                startActivity(intent)
+                finish() // Close current activity to ensure channels are created first
+                return
+            }
+        }
+    }
+    
+    private fun requestNotificationPermission() {
+        if (!notificationHelper.hasNotificationPermission()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Show explanation dialog before requesting permission
+                AlertDialog.Builder(this)
+                    .setTitle("Notification Permission Required")
+                    .setMessage("This app needs notification permission to alert you when gear or seeds become available. Without notifications, the app cannot function properly.")
+                    .setPositiveButton("Enable Notifications") { _, _ ->
+                        notificationHelper.requestNotificationPermission(this)
+                    }
+                    .setNegativeButton("Open Settings") { _, _ ->
+                        // Open app notification settings directly
+                        val intent = Intent().apply {
+                            action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                        }
+                        startActivity(intent)
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        if (requestCode == NotificationHelper.PERMISSION_REQUEST_NOTIFICATION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Notification permission denied. Alerts won't work properly.", Toast.LENGTH_LONG).show()
+                
+                // Show settings dialog to encourage user to enable permissions manually
+                AlertDialog.Builder(this)
+                    .setTitle("Permission Required")
+                    .setMessage("Notifications are required for this app to function properly. Would you like to enable them in settings?")
+                    .setPositiveButton("Settings") { _, _ ->
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        val uri = Uri.fromParts("package", packageName, null)
+                        intent.data = uri
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
     }
     
     private fun requestBatteryOptimizationExemption() {
