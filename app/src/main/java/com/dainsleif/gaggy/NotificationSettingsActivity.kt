@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.CompoundButton
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
@@ -69,6 +70,16 @@ class NotificationSettingsActivity : AppCompatActivity() {
         "Beanstalk"
     )
     
+    // List of eggs from the image
+    private val eggs = listOf(
+        "Common Egg",
+        "Rare Egg",
+        "Uncommon Egg",
+        "Legendary Egg",
+        "Bug Egg",
+        "Mythical Egg"
+    )
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -79,9 +90,16 @@ class NotificationSettingsActivity : AppCompatActivity() {
             insets
         }
         
+        // Set up back button
+        val backButton = findViewById<ImageButton>(R.id.backButton)
+        backButton.setOnClickListener {
+            finish()
+        }
+        
         // Initialize the notification channels
         createGearNotificationChannel()
         createSeedNotificationChannel()
+        createEggNotificationChannel()
         
         // Initialize UI components
         settingsLayout = findViewById(R.id.settingsLayout)
@@ -95,6 +113,9 @@ class NotificationSettingsActivity : AppCompatActivity() {
         // Setup the UI for seed notification settings
         setupSeedNotificationSettings()
         
+        // Setup the UI for egg notification settings
+        setupEggNotificationSettings()
+        
         // Add button to open battery optimization settings
         addBatteryOptimizationButton()
         
@@ -103,6 +124,9 @@ class NotificationSettingsActivity : AppCompatActivity() {
         
         // Listen for seed stock changes
         listenForSeedStockChanges()
+        
+        // Listen for egg stock changes
+        listenForEggStockChanges()
     }
     
     private fun createGearNotificationChannel() {
@@ -142,6 +166,37 @@ class NotificationSettingsActivity : AppCompatActivity() {
             val description = "Notifications for available seeds"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel("seed_channel", name, importance).apply {
+                this.description = description
+                
+                // Enable lights and make it show as alert on lockscreen
+                enableLights(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                
+                // Enable vibration
+                enableVibration(false)  // Disable channel vibration, we'll handle it manually
+                
+                // IMPORTANT: Disable sound on channel to prevent double sounds
+                setSound(null, null)
+                
+                // Allow this channel to bypass Do Not Disturb mode
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setAllowBubbles(true)
+                }
+                
+                // Show badge
+                setShowBadge(true)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+    
+    private fun createEggNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Egg Notifications"
+            val description = "Notifications for available eggs"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel("egg_channel", name, importance).apply {
                 this.description = description
                 
                 // Enable lights and make it show as alert on lockscreen
@@ -301,6 +356,60 @@ class NotificationSettingsActivity : AppCompatActivity() {
         }
     }
     
+    private fun setupEggNotificationSettings() {
+        // Add header
+        val header = TextView(this)
+        header.text = "Egg Notification Settings"
+        header.textSize = 20f
+        header.setPadding(0, 16, 0, 16)
+        settingsLayout.addView(header)
+        
+        // Add a switch for each egg
+        eggs.forEachIndexed { index, eggName ->
+            val switchLayout = LinearLayout(this)
+            switchLayout.orientation = LinearLayout.HORIZONTAL
+            switchLayout.setPadding(16, 16, 16, 16)
+            
+            val eggText = TextView(this)
+            eggText.text = eggName
+            eggText.textSize = 16f
+            eggText.layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            
+            val switch = Switch(this)
+            switch.isChecked = sharedPreferences.getBoolean(eggName, false)
+            switch.tag = eggName
+            switch.setOnCheckedChangeListener { _: CompoundButton, isChecked: Boolean ->
+                sharedPreferences.edit().putBoolean(eggName, isChecked).apply()
+                Toast.makeText(
+                    this,
+                    "$eggName notifications ${if (isChecked) "enabled" else "disabled"}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            
+            switchLayout.addView(eggText)
+            switchLayout.addView(switch)
+            
+            settingsLayout.addView(switchLayout)
+            
+            // Add a divider except for the last item
+            if (index < eggs.size - 1) {
+                val divider = View(this)
+                divider.setBackgroundColor(getColor(android.R.color.darker_gray))
+                val dividerParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    1
+                )
+                divider.layoutParams = dividerParams
+                settingsLayout.addView(divider)
+            }
+        }
+    }
+    
     private fun listenForGearStockChanges() {
         val database = FirebaseDatabase.getInstance().reference.child("discord_data")
         database.child("stocks").child("GEAR STOCK").addValueEventListener(object : ValueEventListener {
@@ -354,6 +463,38 @@ class NotificationSettingsActivity : AppCompatActivity() {
             
             override fun onCancelled(error: DatabaseError) {
                 Log.e("SeedNotification", "Firebase error: ${error.message}")
+                // Handle error
+            }
+        })
+    }
+    
+    private fun listenForEggStockChanges() {
+        val database = FirebaseDatabase.getInstance().reference.child("discord_data")
+        Log.d("EggNotification", "Setting up egg stock listener")
+        database.child("eggs").child("EGG STOCK").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                Log.d("EggNotification", "Received egg stock data: ${snapshot.childrenCount} items")
+                snapshot.children.forEach { eggSnapshot ->
+                    val name = eggSnapshot.child("name").getValue(String::class.java) ?: ""
+                    val quantity = eggSnapshot.child("quantity").getValue(Int::class.java) ?: 0
+                    
+                    Log.d("EggNotification", "Egg: $name, Quantity: $quantity, Notification enabled: ${sharedPreferences.getBoolean(name, false)}")
+                    
+                    // If quantity is greater than 0 and notifications are enabled for this egg, send notification
+                    if (quantity > 0 && sharedPreferences.getBoolean(name, false)) {
+                        Log.d("EggNotification", "Triggering notification for egg: $name")
+                        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                        val notificationHelper = NotificationHelper.getInstance(this@NotificationSettingsActivity)
+                        notificationHelper.createEggNotification(name, quantity)
+                        
+                        // Mark as seen (you could implement additional logic here for "seen" status)
+                        sharedPreferences.edit().putBoolean("${name}_seen", true).apply()
+                    }
+                }
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("EggNotification", "Firebase error: ${error.message}")
                 // Handle error
             }
         })

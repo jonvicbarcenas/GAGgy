@@ -252,6 +252,92 @@ class NotificationHelper private constructor(private val context: Context) {
         Log.d("NotificationHelper", "Notification created for seed: $seedName with ID: ${getNotificationId(seedName)}")
     }
     
+    fun createEggNotification(eggName: String, quantity: Int) {
+        Log.d("NotificationHelper", "Creating notification for egg: $eggName")
+        
+        // First, stop any existing notifications to prevent double sound
+        stopAllNotifications()
+        
+        // Create an intent to open the app when notification is clicked
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context, 
+            getNotificationId(eggName),
+            intent,
+            pendingIntentFlags
+        )
+        
+        // Set up custom sound
+        val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.urgent}")
+        
+        // Play sound directly using MediaPlayer to ensure it plays even when screen is off
+        playNotificationSound(soundUri)
+        
+        // Set up vibration pattern (10 seconds)
+        val vibrationDuration = 10000L // 10 seconds in milliseconds
+        
+        // Start vibration
+        startVibration(vibrationDuration)
+        
+        // Create a full screen intent for high priority notifications
+        val fullScreenIntent = PendingIntent.getActivity(
+            context,
+            getNotificationId(eggName) + 1000, // Different ID to avoid conflicts
+            intent,
+            pendingIntentFlags
+        )
+        
+        // Create a stop action intent
+        val stopIntent = Intent(context, NotificationStopReceiver::class.java).apply {
+            action = ACTION_STOP_NOTIFICATION
+            putExtra("notification_id", getNotificationId(eggName))
+        }
+        
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            getNotificationId(eggName) + 2000, // Different ID to avoid conflicts
+            stopIntent,
+            pendingIntentFlags
+        )
+        
+        // Create the notification
+        val notification = NotificationCompat.Builder(context, "egg_channel")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("$eggName Available!")
+            .setContentText("$eggName is now available with quantity: $quantity")
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setContentIntent(pendingIntent)
+            .setFullScreenIntent(fullScreenIntent, true)
+            .setAutoCancel(false)
+            // Do not set sound or vibration in notification (we handle it manually)
+            .setVibrate(null) // No vibration pattern
+            .setDefaults(0) // No defaults
+            .setSound(null) // No sound
+            .setOngoing(true) // Make it persistent until explicitly dismissed
+            // Add stop action
+            .addAction(android.R.drawable.ic_media_pause, "Stop", stopPendingIntent)
+            // Ensure notification pops up on screen
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+        
+        // Add flags to ensure alert is shown
+        notification.flags = notification.flags or Notification.FLAG_INSISTENT
+        
+        // Send the notification
+        notificationManager.notify(getNotificationId(eggName), notification)
+        Log.d("NotificationHelper", "Notification created for egg: $eggName with ID: ${getNotificationId(eggName)}")
+    }
+    
     // Stop notification and its sound/vibration effects
     fun stopNotification(notificationId: Int) {
         Log.d("NotificationHelper", "Stopping notification: $notificationId")
