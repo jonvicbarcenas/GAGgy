@@ -18,10 +18,10 @@
         android:theme="@style/AppTheme"
         tools:targetApi="31">
         <activity
-            android:name=".NotificationSettingsActivity"
+            android:name=".ui.settings.NotificationSettingsActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.main.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -32,7 +32,7 @@
         
         <!-- Register the notification stop receiver -->
         <receiver
-            android:name=".NotificationStopReceiver"
+            android:name=".receivers.NotificationStopReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.dainsleif.gaggy.STOP_NOTIFICATION" />
