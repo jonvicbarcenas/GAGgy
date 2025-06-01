@@ -44,12 +44,12 @@ jobs:
 
         # Ensure the directory exists
       - name: Create directory for JKS
-        run: mkdir -p app/jvb
+        run: mkdir -p jvb
 
       # Decode the JKS file
       - name: Decode JKS file
         run: |
-          echo "${{ secrets.JKS_BASE64 }}" | base64 -d > app/jvb/dainsleif.jks
+          echo "${{ secrets.JKS_BASE64 }}" | base64 -d > jvb/dainsleif.jks
 
 
       # Build the app
