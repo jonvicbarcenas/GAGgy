@@ -17,6 +17,14 @@ class ItemRepository private constructor(context: Context) {
     private val database = FirebaseDatabase.getInstance().reference.child("discord_data")
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE)
     
+    // Store previous items to detect changes
+    private var previousItems = mapOf<ItemType, List<Item>>(
+        ItemType.GEAR to emptyList(),
+        ItemType.SEED to emptyList(),
+        ItemType.EGG to emptyList(),
+        ItemType.HONEY to emptyList()
+    )
+    
     companion object {
         private const val TAG = "ItemRepository"
         
@@ -125,18 +133,45 @@ class ItemRepository private constructor(context: Context) {
      * Listens for stock changes from Firebase
      */
     fun listenForStockChanges(
-        onGearUpdated: (List<Item>) -> Unit = {},
-        onSeedUpdated: (List<Item>) -> Unit = {},
-        onEggUpdated: (List<Item>) -> Unit = {},
-        onHoneyUpdated: (List<Item>) -> Unit = {}
+        onGearUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
+        onSeedUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
+        onEggUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
+        onHoneyUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> }
     ) {
         // Listen for all data changes
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                processGearStock(snapshot, onGearUpdated)
-                processSeedStock(snapshot, onSeedUpdated)
-                processEggStock(snapshot, onEggUpdated)
-                processHoneyStock(snapshot, onHoneyUpdated)
+                // Process data and detect changes
+                val gearItems = processGearStock(snapshot)
+                val seedItems = processSeedStock(snapshot)
+                val eggItems = processEggStock(snapshot)
+                val honeyItems = processHoneyStock(snapshot)
+                
+                // Check for any items with enabled notifications
+                val hasEnabledGearItems = gearItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
+                val hasEnabledSeedItems = seedItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
+                val hasEnabledEggItems = eggItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
+                val hasEnabledHoneyItems = honeyItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
+                
+                // Determine if there are actual changes in items with notifications enabled
+                val gearChanged = hasEnabledGearItems && hasItemsChanged(gearItems, previousItems[ItemType.GEAR] ?: emptyList())
+                val seedChanged = hasEnabledSeedItems && hasItemsChanged(seedItems, previousItems[ItemType.SEED] ?: emptyList())
+                val eggChanged = hasEnabledEggItems && hasItemsChanged(eggItems, previousItems[ItemType.EGG] ?: emptyList())
+                val honeyChanged = hasEnabledHoneyItems && hasItemsChanged(honeyItems, previousItems[ItemType.HONEY] ?: emptyList())
+                
+                // Update previous items after checking
+                previousItems = mapOf(
+                    ItemType.GEAR to gearItems,
+                    ItemType.SEED to seedItems,
+                    ItemType.EGG to eggItems,
+                    ItemType.HONEY to honeyItems
+                )
+                
+                // Notify with changes
+                onGearUpdated(gearItems, gearChanged)
+                onSeedUpdated(seedItems, seedChanged)
+                onEggUpdated(eggItems, eggChanged)
+                onHoneyUpdated(honeyItems, honeyChanged)
             }
             
             override fun onCancelled(error: DatabaseError) {
@@ -145,7 +180,25 @@ class ItemRepository private constructor(context: Context) {
         })
     }
     
-    private fun processGearStock(snapshot: DataSnapshot, callback: (List<Item>) -> Unit) {
+    // Check if there are any relevant changes in item quantities
+    private fun hasItemsChanged(newItems: List<Item>, oldItems: List<Item>): Boolean {
+        // If sizes are different, something changed
+        if (newItems.size != oldItems.size) return true
+        
+        // Check each item with notifications enabled for quantity changes
+        val oldItemMap = oldItems.associateBy { it.name }
+        
+        return newItems.any { newItem ->
+            // Only check items with enabled notifications
+            if (isNotificationEnabled(newItem.name) && newItem.quantity > 0) {
+                val oldItem = oldItemMap[newItem.name]
+                // Either the item is new, or its quantity changed
+                oldItem == null || oldItem.quantity != newItem.quantity
+            } else false
+        }
+    }
+    
+    private fun processGearStock(snapshot: DataSnapshot): List<Item> {
         try {
             val gearItems = mutableListOf<Item>()
             val gearSnapshot = snapshot.child("stocks").child("GEAR STOCK")
@@ -157,14 +210,14 @@ class ItemRepository private constructor(context: Context) {
                 gearItems.add(Item(name, quantity, ItemType.GEAR))
             }
             
-            callback(gearItems)
+            return gearItems
         } catch (e: Exception) {
             Log.e(TAG, "Error processing gear stock: ${e.message}")
-            callback(emptyList())
+            return emptyList()
         }
     }
     
-    private fun processSeedStock(snapshot: DataSnapshot, callback: (List<Item>) -> Unit) {
+    private fun processSeedStock(snapshot: DataSnapshot): List<Item> {
         try {
             val seedItems = mutableListOf<Item>()
             val seedSnapshot = snapshot.child("stocks").child("SEEDS STOCK")
@@ -176,14 +229,14 @@ class ItemRepository private constructor(context: Context) {
                 seedItems.add(Item(name, quantity, ItemType.SEED))
             }
             
-            callback(seedItems)
+            return seedItems
         } catch (e: Exception) {
             Log.e(TAG, "Error processing seed stock: ${e.message}")
-            callback(emptyList())
+            return emptyList()
         }
     }
     
-    private fun processEggStock(snapshot: DataSnapshot, callback: (List<Item>) -> Unit) {
+    private fun processEggStock(snapshot: DataSnapshot): List<Item> {
         try {
             val eggItems = mutableListOf<Item>()
             val eggSnapshot = snapshot.child("eggs").child("EGG STOCK")
@@ -195,14 +248,14 @@ class ItemRepository private constructor(context: Context) {
                 eggItems.add(Item(name, quantity, ItemType.EGG))
             }
             
-            callback(eggItems)
+            return eggItems
         } catch (e: Exception) {
             Log.e(TAG, "Error processing egg stock: ${e.message}")
-            callback(emptyList())
+            return emptyList()
         }
     }
     
-    private fun processHoneyStock(snapshot: DataSnapshot, callback: (List<Item>) -> Unit) {
+    private fun processHoneyStock(snapshot: DataSnapshot): List<Item> {
         try {
             val honeyItems = mutableListOf<Item>()
             val honeySnapshot = snapshot.child("honeyStocks").child("HONEY STOCK")
@@ -214,10 +267,10 @@ class ItemRepository private constructor(context: Context) {
                 honeyItems.add(Item(name, quantity, ItemType.HONEY))
             }
             
-            callback(honeyItems)
+            return honeyItems
         } catch (e: Exception) {
             Log.e(TAG, "Error processing honey stock: ${e.message}")
-            callback(emptyList())
+            return emptyList()
         }
     }
 } 

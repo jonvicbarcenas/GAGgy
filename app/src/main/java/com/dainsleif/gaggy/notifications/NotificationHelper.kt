@@ -21,6 +21,7 @@ import com.dainsleif.gaggy.ui.main.MainActivity
 class NotificationHelper private constructor(private val context: Context) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val mediaManager = MediaManager.getInstance(context)
+    private var activeNotificationId: Int? = null
     
     companion object {
         const val ACTION_STOP_NOTIFICATION = "com.dainsleif.gaggy.STOP_NOTIFICATION"
@@ -64,6 +65,7 @@ class NotificationHelper private constructor(private val context: Context) {
         // Send the notification
         val notificationId = getNotificationId(item.name)
         notificationManager.notify(notificationId, notification)
+        activeNotificationId = notificationId
         
         // Play sound and start vibration
         val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.urgent}")
@@ -80,6 +82,10 @@ class NotificationHelper private constructor(private val context: Context) {
         Log.d(TAG, "Stopping notification: $notificationId")
         mediaManager.stopAllMedia()
         notificationManager.cancel(notificationId)
+        
+        if (activeNotificationId == notificationId) {
+            activeNotificationId = null
+        }
     }
     
     /**
@@ -88,7 +94,10 @@ class NotificationHelper private constructor(private val context: Context) {
     fun stopAllNotifications() {
         Log.d(TAG, "Stopping all notifications")
         mediaManager.stopAllMedia()
-        // Don't cancel all notifications, as we might want to keep some
+        activeNotificationId?.let {
+            notificationManager.cancel(it)
+        }
+        activeNotificationId = null
     }
     
     private fun createNotificationBuilder(item: Item, channelId: String): NotificationCompat.Builder {

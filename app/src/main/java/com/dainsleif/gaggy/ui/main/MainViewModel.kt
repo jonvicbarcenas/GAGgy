@@ -40,21 +40,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun startListeningForStockChanges() {
         itemRepository.listenForStockChanges(
-            onGearUpdated = { gearItems ->
+            onGearUpdated = { gearItems, isChanged ->
                 _gearItems.value = gearItems
-                checkForNotifications(gearItems, ItemType.GEAR)
+                if (isChanged) {
+                    checkForNotifications(gearItems, ItemType.GEAR)
+                }
             },
-            onSeedUpdated = { seedItems ->
+            onSeedUpdated = { seedItems, isChanged ->
                 _seedItems.value = seedItems
-                checkForNotifications(seedItems, ItemType.SEED)
+                if (isChanged) {
+                    checkForNotifications(seedItems, ItemType.SEED)
+                }
             },
-            onEggUpdated = { eggItems ->
+            onEggUpdated = { eggItems, isChanged ->
                 _eggItems.value = eggItems
-                checkForNotifications(eggItems, ItemType.EGG)
+                if (isChanged) {
+                    checkForNotifications(eggItems, ItemType.EGG)
+                }
             },
-            onHoneyUpdated = { honeyItems ->
+            onHoneyUpdated = { honeyItems, isChanged ->
                 _honeyItems.value = honeyItems
-                checkForNotifications(honeyItems, ItemType.HONEY)
+                if (isChanged) {
+                    checkForNotifications(honeyItems, ItemType.HONEY)
+                }
             }
         )
     }
