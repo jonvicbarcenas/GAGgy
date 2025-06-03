@@ -1,5 +1,6 @@
 package com.dainsleif.gaggy.ui.main
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -7,7 +8,9 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -16,15 +19,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.dainsleif.gaggy.GaggyApplication
 import com.dainsleif.gaggy.R
 import com.dainsleif.gaggy.data.models.Item
 import com.dainsleif.gaggy.notifications.NotificationChannelManager
 import com.dainsleif.gaggy.notifications.PermissionHandler
 import com.dainsleif.gaggy.ui.settings.NotificationSettingsActivity
+import com.dainsleif.gaggy.util.AppUpdateChecker
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var seedsLayout: LinearLayout
@@ -33,9 +40,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var honeyLayout: LinearLayout
     private lateinit var lastUpdatedTextView: TextView
     private lateinit var notificationsButton: Button
+    private lateinit var menuButton: ImageButton
     private lateinit var viewModel: MainViewModel
     private lateinit var permissionHandler: PermissionHandler
     private lateinit var notificationChannelManager: NotificationChannelManager
+    private lateinit var appUpdateChecker: AppUpdateChecker
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,8 +66,17 @@ class MainActivity : AppCompatActivity() {
         notificationChannelManager = NotificationChannelManager(this)
         notificationChannelManager.createAllChannels()
         
+        // Initialize app update checker
+        appUpdateChecker = AppUpdateChecker(this)
+        
         // Request permissions
         requestPermissions()
+        
+        // Request battery optimization exemption
+        requestBatteryOptimizationExemption()
+        
+        // Request auto-start permission for specific manufacturers
+        requestAutoStartPermission()
         
         // Initialize UI components
         initializeUI()
@@ -69,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         // Listen for last updated times
         listenForLastUpdatedTimes()
     }
-    
+
     private fun initializeUI() {
         seedsLayout = findViewById(R.id.seedsLayout)
         gearLayout = findViewById(R.id.gearLayout)
@@ -77,12 +95,35 @@ class MainActivity : AppCompatActivity() {
         honeyLayout = findViewById(R.id.honeyLayout)
         lastUpdatedTextView = findViewById(R.id.lastUpdatedTextView)
         notificationsButton = findViewById(R.id.notificationsButton)
+        menuButton = findViewById(R.id.menuButton)
         
         // Set up notification settings button
         notificationsButton.setOnClickListener {
             val intent = Intent(this, NotificationSettingsActivity::class.java)
             startActivity(intent)
         }
+        
+        // Set up menu button
+        menuButton.setOnClickListener { view ->
+            showPopupMenu(view)
+        }
+    }
+    
+    private fun showPopupMenu(view: View) {
+        val popupMenu = PopupMenu(this, view)
+        popupMenu.menuInflater.inflate(R.menu.main_menu, popupMenu.menu)
+        
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.menu_check_update -> {
+                    checkForUpdates()
+                    true
+                }
+                else -> false
+            }
+        }
+        
+        popupMenu.show()
     }
     
     private fun observeViewModel() {
@@ -144,14 +185,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun requestPermissions() {
-        // Request notification permission if not granted
-        if (!permissionHandler.hasNotificationPermission()) {
-            permissionHandler.showNotificationPermissionDialog(this)
+    private fun checkForUpdates() {
+        lifecycleScope.launch {
+            val updateResult = appUpdateChecker.checkForUpdate()
+            appUpdateChecker.showUpdateDialog(updateResult)
         }
-        
-        // Request battery optimization exemption
-        permissionHandler.requestBatteryOptimizationExemption(this)
     }
     
     private fun listenForLastUpdatedTimes() {
@@ -168,6 +206,27 @@ class MainActivity : AppCompatActivity() {
                 // Handle database error
             }
         })
+    }
+    
+    private fun requestPermissions() {
+        // Request notification permission if not granted
+        if (!permissionHandler.hasNotificationPermission()) {
+            permissionHandler.showNotificationPermissionDialog(this)
+        }
+    }
+    
+    private fun requestBatteryOptimizationExemption() {
+        (application as GaggyApplication).requestBatteryOptimizationExemption()
+    }
+    
+    private fun requestAutoStartPermission() {
+        val sharedPreferences = getSharedPreferences("GaggyPrefs", Context.MODE_PRIVATE)
+        val autoStartRequested = sharedPreferences.getBoolean("autoStartRequested", false)
+        
+        if (!autoStartRequested) {
+            com.dainsleif.gaggy.util.AutoStartHelper.getInstance().getAutoStartPermission(this)
+            sharedPreferences.edit().putBoolean("autoStartRequested", true).apply()
+        }
     }
     
     override fun onRequestPermissionsResult(

@@ -9,6 +9,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.tasks.await
 
 /**
  * Repository class to handle all data operations related to items
@@ -272,5 +273,89 @@ class ItemRepository private constructor(context: Context) {
             Log.e(TAG, "Error processing honey stock: ${e.message}")
             return emptyList()
         }
+    }
+    
+    /**
+     * Get current gear items
+     */
+    suspend fun getGearItems(): List<Item> {
+        val items = mutableListOf<Item>()
+        try {
+            val dataSnapshot = database.child("stocks").child("GEAR STOCK").get().await()
+            
+            dataSnapshot.children.forEach { itemSnapshot ->
+                val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
+                val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 0
+                
+                items.add(Item(name, quantity, ItemType.GEAR))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting gear items: ${e.message}")
+        }
+        
+        return items
+    }
+    
+    /**
+     * Get current seed items
+     */
+    suspend fun getSeedItems(): List<Item> {
+        val items = mutableListOf<Item>()
+        try {
+            val dataSnapshot = database.child("stocks").child("SEEDS STOCK").get().await()
+            
+            dataSnapshot.children.forEach { itemSnapshot ->
+                val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
+                val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 0
+                
+                items.add(Item(name, quantity, ItemType.SEED))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting seed items: ${e.message}")
+        }
+        
+        return items
+    }
+    
+    /**
+     * Get current egg items
+     */
+    suspend fun getEggItems(): List<Item> {
+        val items = mutableListOf<Item>()
+        try {
+            val dataSnapshot = database.child("eggs").child("EGG STOCK").get().await()
+            
+            dataSnapshot.children.forEach { itemSnapshot ->
+                val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
+                val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 0
+                
+                items.add(Item(name, quantity, ItemType.EGG))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting egg items: ${e.message}")
+        }
+        
+        return items
+    }
+    
+    /**
+     * Get current honey items
+     */
+    suspend fun getHoneyItems(): List<Item> {
+        val items = mutableListOf<Item>()
+        try {
+            val dataSnapshot = database.child("honeyStocks").child("HONEY STOCK").get().await()
+            
+            dataSnapshot.children.forEach { itemSnapshot ->
+                val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
+                val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 0
+                
+                items.add(Item(name, quantity, ItemType.HONEY))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting honey items: ${e.message}")
+        }
+        
+        return items
     }
 } 
