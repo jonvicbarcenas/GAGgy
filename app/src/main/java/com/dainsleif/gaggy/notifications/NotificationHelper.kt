@@ -131,6 +131,8 @@ class NotificationHelper private constructor(private val context: Context) {
         val stopIntent = Intent(context, NotificationStopReceiver::class.java).apply {
             action = ACTION_STOP_NOTIFICATION
             putExtra("notification_id", getNotificationId(item.name))
+            putExtra("item_name", item.name)
+            putExtra("item_type", item.type.ordinal)
         }
         
         val stopPendingIntent = PendingIntent.getBroadcast(

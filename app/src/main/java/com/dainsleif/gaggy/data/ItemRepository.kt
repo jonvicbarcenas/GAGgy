@@ -17,6 +17,7 @@ import kotlinx.coroutines.tasks.await
 class ItemRepository private constructor(context: Context) {
     private val database = FirebaseDatabase.getInstance().reference.child("discord_data")
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE)
+    private val lastUpdatedPrefs: SharedPreferences = context.getSharedPreferences("LastUpdated", Context.MODE_PRIVATE)
     
     // Store previous items to detect changes
     private var previousItems = mapOf<ItemType, List<Item>>(
@@ -24,6 +25,13 @@ class ItemRepository private constructor(context: Context) {
         ItemType.SEED to emptyList(),
         ItemType.EGG to emptyList(),
         ItemType.HONEY to emptyList()
+    )
+    
+    // Store current last updated times
+    private var currentLastUpdated = mapOf<ItemType, String>(
+        ItemType.GEAR to "",
+        ItemType.SEED to "",
+        ItemType.EGG to ""
     )
     
     companion object {
@@ -111,6 +119,51 @@ class ItemRepository private constructor(context: Context) {
      */
     fun isNotificationEnabled(itemName: String): Boolean {
         return sharedPreferences.getBoolean(itemName, false)
+    }
+    
+    /**
+     * Save the last updated time for an item
+     */
+    fun saveItemLastUpdatedTime(itemName: String, lastUpdated: String) {
+        lastUpdatedPrefs.edit().putString(itemName, lastUpdated).apply()
+        Log.d(TAG, "Saved last updated time for $itemName: $lastUpdated")
+    }
+    
+    /**
+     * Get the saved last updated time for an item
+     */
+    fun getItemLastUpdatedTime(itemName: String): String {
+        return lastUpdatedPrefs.getString(itemName, "") ?: ""
+    }
+    
+    /**
+     * Update current last updated times
+     */
+    fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, honeyTime: String) {
+        currentLastUpdated = mapOf(
+            ItemType.GEAR to stocksTime,
+            ItemType.SEED to stocksTime,
+            ItemType.EGG to eggsTime,
+            ItemType.HONEY to honeyTime
+        )
+    }
+    
+    /**
+     * Get current last updated time for an item type
+     */
+    fun getCurrentLastUpdatedTime(itemType: ItemType): String {
+        return currentLastUpdated[itemType] ?: ""
+    }
+    
+    /**
+     * Check if an item has a newer update than the saved one
+     */
+    fun hasNewerUpdate(itemName: String, itemType: ItemType): Boolean {
+        val savedTime = getItemLastUpdatedTime(itemName)
+        val currentTime = getCurrentLastUpdatedTime(itemType)
+        
+        // If no saved time, or current time is different and not empty
+        return savedTime.isEmpty() || (currentTime.isNotEmpty() && currentTime != savedTime)
     }
     
     /**

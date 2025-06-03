@@ -122,7 +122,8 @@ class StockMonitorWorker(
     private fun checkForNotifications(items: List<Item>, itemType: ItemType) {
         items.forEach { item ->
             // If quantity is greater than 0 and notifications are enabled for this item, send notification
-            if (item.quantity > 0 && itemRepository.isNotificationEnabled(item.name)) {
+            if (item.quantity > 0 && itemRepository.isNotificationEnabled(item.name) && 
+                itemRepository.hasNewerUpdate(item.name, itemType)) {
                 Log.d(TAG, "Sending notification for ${item.name} with quantity ${item.quantity}")
                 notificationHelper.createItemNotification(item)
             }
