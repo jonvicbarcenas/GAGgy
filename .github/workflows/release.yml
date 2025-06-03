@@ -82,6 +82,11 @@ jobs:
             echo "APK_PATH=app/build/outputs/apk/release/app-release-unsigned.apk" >> $GITHUB_ENV
             echo "APK_NAME=app-release-unsigned-v${{ env.VERSION_NAME }}.apk" >> $GITHUB_ENV
           fi
+      
+      # Copy and rename the APK file
+      - name: Rename APK file
+        run: |
+          cp "${{ env.APK_PATH }}" "${{ env.APK_NAME }}"
 
       # Create GitHub Release and upload APK
       - name: Create GitHub Release and Upload APK
@@ -90,8 +95,7 @@ jobs:
           tag_name: "v${{ env.VERSION_NAME }}"
           name: "v${{ env.VERSION_NAME }}"
           body: "Release version ${{ env.VERSION_NAME }}"
-          files: |
-            ${{ env.APK_PATH }}#${{ env.APK_NAME }}
+          files: ${{ env.APK_NAME }}
           draft: false
           prerelease: false
         env:
