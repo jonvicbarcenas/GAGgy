@@ -26,6 +26,7 @@ class NotificationHelper private constructor(private val context: Context) {
     companion object {
         const val ACTION_STOP_NOTIFICATION = "com.dainsleif.gaggy.STOP_NOTIFICATION"
         private const val TAG = "NotificationHelper"
+        private const val ANNOUNCEMENT_NOTIFICATION_ID = 9999
         
         // Singleton instance
         @Volatile
@@ -37,6 +38,45 @@ class NotificationHelper private constructor(private val context: Context) {
                 INSTANCE ?: NotificationHelper(context.applicationContext).also { INSTANCE = it }
             }
         }
+    }
+    
+    /**
+     * Show an announcement notification from Firebase Cloud Messaging
+     */
+    fun showAnnouncementNotification(title: String, message: String) {
+        Log.d(TAG, "Showing announcement notification: $title")
+        
+        // Create an intent to open the app when notification is clicked
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            ANNOUNCEMENT_NOTIFICATION_ID,
+            intent,
+            pendingIntentFlags
+        )
+        
+        // Create the notification
+        val builder = NotificationCompat.Builder(context, NotificationChannelManager.ANNOUNCEMENTS_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+        
+        // Send the notification
+        notificationManager.notify(ANNOUNCEMENT_NOTIFICATION_ID, builder.build())
     }
     
     /**

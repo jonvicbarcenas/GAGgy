@@ -17,6 +17,7 @@ class NotificationChannelManager(private val context: Context) {
         const val GEAR_CHANNEL_ID = "gear_channel"
         const val SEED_CHANNEL_ID = "seed_channel"
         const val EGG_CHANNEL_ID = "egg_channel"
+        const val ANNOUNCEMENTS_CHANNEL_ID = "announcements_channel"
         private const val TAG = "NotificationChannelManager"
     }
     
@@ -28,6 +29,7 @@ class NotificationChannelManager(private val context: Context) {
             createGearChannel()
             createSeedChannel()
             createEggChannel()
+            createAnnouncementsChannel()
             Log.d(TAG, "All notification channels created")
         }
     }
@@ -108,6 +110,29 @@ class NotificationChannelManager(private val context: Context) {
             }
             notificationManager.createNotificationChannel(channel)
             Log.d(TAG, "Egg notification channel created")
+        }
+    }
+    
+    private fun createAnnouncementsChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Announcements"
+            val description = "Important announcements from the app"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(ANNOUNCEMENTS_CHANNEL_ID, name, importance).apply {
+                this.description = description
+                
+                enableLights(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                
+                // Allow channel to bypass Do Not Disturb mode for important announcements
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setAllowBubbles(true)
+                }
+                
+                setShowBadge(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+            Log.d(TAG, "Announcements notification channel created")
         }
     }
 } 

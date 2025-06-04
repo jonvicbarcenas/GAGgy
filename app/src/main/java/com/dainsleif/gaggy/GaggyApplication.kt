@@ -9,7 +9,10 @@ import android.provider.Settings
 import android.util.Log
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import com.dainsleif.gaggy.notifications.NotificationChannelManager
 import com.dainsleif.gaggy.util.WorkManagerUtil
+import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
 
 /**
  * Custom Application class for GAGgy
@@ -23,8 +26,44 @@ class GaggyApplication : Application(), Configuration.Provider {
         
         Log.d(TAG, "Initializing application")
         
+        // Initialize Firebase
+        initializeFirebase()
+        
+        // Create notification channels
+        NotificationChannelManager(this).createAllChannels()
+        
         // Initialize WorkManager for background processing
         initializeWorkManager()
+    }
+    
+    /**
+     * Initialize Firebase and Firebase Cloud Messaging
+     */
+    private fun initializeFirebase() {
+        Log.d(TAG, "Initializing Firebase")
+        FirebaseApp.initializeApp(this)
+        
+        // Subscribe to announcements topic
+        FirebaseMessaging.getInstance().subscribeToTopic("announcements")
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d(TAG, "Subscribed to announcements topic")
+                } else {
+                    Log.e(TAG, "Failed to subscribe to announcements topic", task.exception)
+                }
+            }
+        
+        // Get and log the FCM token
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val token = task.result
+                    Log.d(TAG, "FCM Token: $token")
+                    // You might want to send this token to your server
+                } else {
+                    Log.e(TAG, "Failed to get FCM token", task.exception)
+                }
+            }
     }
     
     /**

@@ -62,6 +62,15 @@
             </intent-filter>
         </receiver>
         
+        <!-- Firebase Cloud Messaging Service -->
+        <service
+            android:name=".notifications.FCMService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        
         <!-- Declare the WorkManager service with foreground service type -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
