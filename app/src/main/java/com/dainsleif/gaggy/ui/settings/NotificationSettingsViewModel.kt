@@ -25,6 +25,9 @@ class NotificationSettingsViewModel(application: Application) : AndroidViewModel
     private val _honeyItems = MutableLiveData<List<Pair<String, Boolean>>>()
     val honeyItems: LiveData<List<Pair<String, Boolean>>> = _honeyItems
     
+    private val _weatherAlerts = MutableLiveData<List<Pair<String, Boolean>>>()
+    val weatherAlerts: LiveData<List<Pair<String, Boolean>>> = _weatherAlerts
+    
     init {
         loadAllSettings()
     }
@@ -37,6 +40,7 @@ class NotificationSettingsViewModel(application: Application) : AndroidViewModel
         _seedItems.value = itemRepository.getAllItemsWithNotificationStatus(ItemType.SEED)
         _eggItems.value = itemRepository.getAllItemsWithNotificationStatus(ItemType.EGG)
         _honeyItems.value = itemRepository.getAllItemsWithNotificationStatus(ItemType.HONEY)
+        _weatherAlerts.value = itemRepository.getAllItemsWithNotificationStatus(ItemType.WEATHER)
     }
     
     /**

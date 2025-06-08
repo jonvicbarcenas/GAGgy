@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import com.dainsleif.gaggy.R
 import com.dainsleif.gaggy.data.models.Item
 import com.dainsleif.gaggy.data.models.ItemType
+import com.dainsleif.gaggy.data.models.Weather
 import com.dainsleif.gaggy.receivers.NotificationStopReceiver
 import com.dainsleif.gaggy.ui.main.MainActivity
 
@@ -113,6 +114,85 @@ class NotificationHelper private constructor(private val context: Context) {
         mediaManager.startVibration(10000L) // 10 seconds
         
         Log.d(TAG, "Notification created for: ${item.name} with ID: $notificationId")
+    }
+    
+    /**
+     * Create a notification for a weather event
+     */
+    fun createWeatherNotification(weather: Weather) {
+        Log.d(TAG, "Creating notification for weather: ${weather.title}")
+        
+        // First, stop any existing notifications to prevent double sound
+        stopAllNotifications()
+        
+        // Create an intent to open the app when notification is clicked
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            getNotificationId(weather.title),
+            intent,
+            pendingIntentFlags
+        )
+        
+        // Create a stop action intent
+        val stopIntent = Intent(context, NotificationStopReceiver::class.java).apply {
+            action = ACTION_STOP_NOTIFICATION
+            putExtra("notification_id", getNotificationId(weather.title))
+            putExtra("item_name", weather.title)
+            putExtra("item_type", ItemType.WEATHER.ordinal)
+        }
+        
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            getNotificationId(weather.title) + 2000, // Different ID to avoid conflicts
+            stopIntent,
+            pendingIntentFlags
+        )
+        
+        // Create the notification
+        val builder = NotificationCompat.Builder(context, NotificationChannelManager.WEATHER_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(weather.title)
+            .setContentText(weather.description)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(weather.description))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(false)
+            // Do not set sound or vibration in notification (we handle it manually)
+            .setVibrate(null) // No vibration pattern
+            .setDefaults(0) // No defaults
+            .setSound(null) // No sound
+            .setOngoing(true) // Make it persistent until explicitly dismissed
+            // Add stop action
+            .addAction(android.R.drawable.ic_media_pause, "Stop", stopPendingIntent)
+            // Ensure notification pops up on screen
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        
+        // Add flags to ensure alert is shown
+        val notification = builder.build()
+        notification.flags = notification.flags or Notification.FLAG_INSISTENT
+        
+        // Send the notification
+        val notificationId = getNotificationId(weather.title)
+        notificationManager.notify(notificationId, notification)
+        activeNotificationId = notificationId
+        
+        // Play sound and start vibration
+        val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.urgent}")
+        mediaManager.playNotificationSound(soundUri)
+        mediaManager.startVibration(10000L) // 10 seconds
+        
+        Log.d(TAG, "Notification created for weather: ${weather.title} with ID: $notificationId")
     }
     
     /**

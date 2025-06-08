@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import com.dainsleif.gaggy.data.ItemRepository
 import com.dainsleif.gaggy.data.models.Item
 import com.dainsleif.gaggy.data.models.ItemType
+import com.dainsleif.gaggy.data.models.Weather
 import com.dainsleif.gaggy.notifications.NotificationHelper
 
 /**
@@ -28,8 +29,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _honeyItems = MutableLiveData<List<Item>>()
     val honeyItems: LiveData<List<Item>> = _honeyItems
     
+    private val _weather = MutableLiveData<Weather?>()
+    val weather: LiveData<Weather?> = _weather
+    
     private val _lastUpdated = MutableLiveData<Triple<String, String, String>>()
     val lastUpdated: LiveData<Triple<String, String, String>> = _lastUpdated
+    
+    private val _weatherLastUpdated = MutableLiveData<String>()
+    val weatherLastUpdated: LiveData<String> = _weatherLastUpdated
     
     init {
         startListeningForStockChanges()
@@ -63,6 +70,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (isChanged) {
                     checkForNotifications(honeyItems, ItemType.HONEY)
                 }
+            },
+            onWeatherUpdated = { weather ->
+                _weather.value = weather
+                checkForWeatherNotification(weather)
             }
         )
     }
@@ -81,10 +92,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
+     * Check if weather needs notification
+     */
+    private fun checkForWeatherNotification(weather: Weather) {
+        val weatherTitle = weather.title
+        // Check if notification is enabled for this weather type
+        if (itemRepository.isNotificationEnabled(weatherTitle)) {
+            notificationHelper.createWeatherNotification(weather)
+        }
+    }
+    
+    /**
      * Update last updated times
      */
     fun updateLastUpdated(stocksTime: String, eggsTime: String, honeyTime: String) {
         _lastUpdated.value = Triple(stocksTime, eggsTime, honeyTime)
         itemRepository.updateCurrentLastUpdated(stocksTime, eggsTime, honeyTime)
+    }
+    
+    /**
+     * Update weather last updated time
+     */
+    fun updateWeatherLastUpdated(weatherTime: String) {
+        _weatherLastUpdated.value = weatherTime
+        itemRepository.updateCurrentLastUpdated(
+            _lastUpdated.value?.first ?: "",
+            _lastUpdated.value?.second ?: "",
+            _lastUpdated.value?.third ?: "",
+            weatherTime
+        )
     }
 } 

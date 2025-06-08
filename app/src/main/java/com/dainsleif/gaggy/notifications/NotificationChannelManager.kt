@@ -17,6 +17,7 @@ class NotificationChannelManager(private val context: Context) {
         const val GEAR_CHANNEL_ID = "gear_channel"
         const val SEED_CHANNEL_ID = "seed_channel"
         const val EGG_CHANNEL_ID = "egg_channel"
+        const val WEATHER_CHANNEL_ID = "weather_channel"
         const val ANNOUNCEMENTS_CHANNEL_ID = "announcements_channel"
         private const val TAG = "NotificationChannelManager"
     }
@@ -29,6 +30,7 @@ class NotificationChannelManager(private val context: Context) {
             createGearChannel()
             createSeedChannel()
             createEggChannel()
+            createWeatherChannel()
             createAnnouncementsChannel()
             Log.d(TAG, "All notification channels created")
         }
@@ -110,6 +112,30 @@ class NotificationChannelManager(private val context: Context) {
             }
             notificationManager.createNotificationChannel(channel)
             Log.d(TAG, "Egg notification channel created")
+        }
+    }
+    
+    private fun createWeatherChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Weather Notifications"
+            val description = "Notifications for weather changes"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(WEATHER_CHANNEL_ID, name, importance).apply {
+                this.description = description
+                
+                enableLights(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                enableVibration(false)
+                setSound(null, null)
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setAllowBubbles(true)
+                }
+                
+                setShowBadge(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+            Log.d(TAG, "Weather notification channel created")
         }
     }
     

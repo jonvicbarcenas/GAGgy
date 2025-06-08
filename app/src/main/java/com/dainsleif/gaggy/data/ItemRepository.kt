@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.dainsleif.gaggy.data.models.Item
 import com.dainsleif.gaggy.data.models.ItemType
+import com.dainsleif.gaggy.data.models.Weather
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -27,11 +28,16 @@ class ItemRepository private constructor(context: Context) {
         ItemType.HONEY to emptyList()
     )
     
+    // Store current weather information
+    private var _currentWeather: Weather? = null
+    
     // Store current last updated times
     private var currentLastUpdated = mapOf<ItemType, String>(
         ItemType.GEAR to "",
         ItemType.SEED to "",
-        ItemType.EGG to ""
+        ItemType.EGG to "",
+        ItemType.HONEY to "",
+        ItemType.WEATHER to ""
     )
     
     companion object {
@@ -81,7 +87,8 @@ class ItemRepository private constructor(context: Context) {
             "Dragon Fruit",
             "Grape",
             "Mushroom",
-            "Beanstalk"
+            "Beanstalk",
+            "Ember Lily"
         )
         
         val EGGS = listOf(
@@ -95,15 +102,26 @@ class ItemRepository private constructor(context: Context) {
         
         val HONEY_ITEMS = listOf(
             "Flower Seed Pack",
-            "Nectarine Seed",
-            "Hive Fruit Seed",
+            "Lavender",
+            "Nectarshade",
+            "Nectarine",
+            "Hive Fruit",
+            "Pollen Radar",
+            "Nectar Staff",
             "Honey Sprinkler",
             "Bee Egg",
             "Bee Crate",
             "Honey Comb",
             "Bee Chair",
             "Honey Torch",
-            "Honey WAlkway"
+            "Honey Walkway"
+        )
+        
+        val WEATHER_ALERTS = listOf(
+            "🌧️ Rain Alert!",
+            "❄️ Snow Alert!",
+            "⛈️ Thunderstorm Alert!",
+            "☄️ Meteor Shower Alert!"
         )
     }
     
@@ -139,12 +157,13 @@ class ItemRepository private constructor(context: Context) {
     /**
      * Update current last updated times
      */
-    fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, honeyTime: String) {
+    fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, honeyTime: String, weatherTime: String = "") {
         currentLastUpdated = mapOf(
             ItemType.GEAR to stocksTime,
             ItemType.SEED to stocksTime,
             ItemType.EGG to eggsTime,
-            ItemType.HONEY to honeyTime
+            ItemType.HONEY to honeyTime,
+            ItemType.WEATHER to weatherTime
         )
     }
     
@@ -175,6 +194,7 @@ class ItemRepository private constructor(context: Context) {
             ItemType.SEED -> SEEDS
             ItemType.EGG -> EGGS
             ItemType.HONEY -> HONEY_ITEMS
+            ItemType.WEATHER -> WEATHER_ALERTS
             else -> emptyList()
         }
         
@@ -190,7 +210,8 @@ class ItemRepository private constructor(context: Context) {
         onGearUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
         onSeedUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
         onEggUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
-        onHoneyUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> }
+        onHoneyUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
+        onWeatherUpdated: (Weather) -> Unit = { }
     ) {
         // Listen for all data changes
         database.addValueEventListener(object : ValueEventListener {
@@ -200,6 +221,7 @@ class ItemRepository private constructor(context: Context) {
                 val seedItems = processSeedStock(snapshot)
                 val eggItems = processEggStock(snapshot)
                 val honeyItems = processHoneyStock(snapshot)
+                val weather = processWeather(snapshot)
                 
                 // Check for any items with enabled notifications
                 val hasEnabledGearItems = gearItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
@@ -221,11 +243,17 @@ class ItemRepository private constructor(context: Context) {
                     ItemType.HONEY to honeyItems
                 )
                 
+                // Update current weather
+                _currentWeather = weather
+                
                 // Notify with changes
                 onGearUpdated(gearItems, gearChanged)
                 onSeedUpdated(seedItems, seedChanged)
                 onEggUpdated(eggItems, eggChanged)
                 onHoneyUpdated(honeyItems, honeyChanged)
+                if (weather != null) {
+                    onWeatherUpdated(weather)
+                }
             }
             
             override fun onCancelled(error: DatabaseError) {
@@ -326,6 +354,75 @@ class ItemRepository private constructor(context: Context) {
             Log.e(TAG, "Error processing honey stock: ${e.message}")
             return emptyList()
         }
+    }
+    
+    /**
+     * Process weather data from Firebase
+     */
+    private fun processWeather(snapshot: DataSnapshot): Weather? {
+        try {
+            val weatherSnapshot = snapshot.child("weather").child("WEATHER")
+            
+            var title = ""
+            var description = ""
+            
+            weatherSnapshot.children.forEach { weatherItem ->
+                val name = weatherItem.child("name").getValue(String::class.java) ?: ""
+                val value = weatherItem.child("value").getValue(String::class.java) ?: ""
+                
+                when (name) {
+                    "title" -> title = value
+                    "description" -> description = value
+                }
+            }
+            
+            return if (title.isNotEmpty() && description.isNotEmpty()) {
+                Weather(title, description)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error processing weather: ${e.message}")
+            return null
+        }
+    }
+    
+    /**
+     * Get current weather information
+     */
+    suspend fun getWeather(): Weather? {
+        try {
+            val weatherSnapshot = database.child("weather").child("WEATHER").get().await()
+            
+            var title = ""
+            var description = ""
+            
+            weatherSnapshot.children.forEach { weatherItem ->
+                val name = weatherItem.child("name").getValue(String::class.java) ?: ""
+                val value = weatherItem.child("value").getValue(String::class.java) ?: ""
+                
+                when (name) {
+                    "title" -> title = value
+                    "description" -> description = value
+                }
+            }
+            
+            return if (title.isNotEmpty() && description.isNotEmpty()) {
+                Weather(title, description)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting weather: ${e.message}")
+            return null
+        }
+    }
+    
+    /**
+     * Get the currently cached weather information
+     */
+    fun getCurrentWeather(): Weather? {
+        return _currentWeather
     }
     
     /**

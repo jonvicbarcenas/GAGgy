@@ -23,6 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import com.dainsleif.gaggy.GaggyApplication
 import com.dainsleif.gaggy.R
 import com.dainsleif.gaggy.data.models.Item
+import com.dainsleif.gaggy.data.models.Weather
 import com.dainsleif.gaggy.notifications.NotificationChannelManager
 import com.dainsleif.gaggy.notifications.PermissionHandler
 import com.dainsleif.gaggy.ui.settings.NotificationSettingsActivity
@@ -38,6 +39,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gearLayout: LinearLayout
     private lateinit var eggsLayout: LinearLayout
     private lateinit var honeyLayout: LinearLayout
+    private lateinit var weatherTitleTextView: TextView
+    private lateinit var weatherDescriptionTextView: TextView
+    private lateinit var weatherLastUpdatedTextView: TextView
     private lateinit var lastUpdatedTextView: TextView
     private lateinit var notificationsButton: Button
     private lateinit var menuButton: ImageButton
@@ -93,6 +97,9 @@ class MainActivity : AppCompatActivity() {
         gearLayout = findViewById(R.id.gearLayout)
         eggsLayout = findViewById(R.id.eggsLayout)
         honeyLayout = findViewById(R.id.honeyLayout)
+        weatherTitleTextView = findViewById(R.id.weatherTitleTextView)
+        weatherDescriptionTextView = findViewById(R.id.weatherDescriptionTextView)
+        weatherLastUpdatedTextView = findViewById(R.id.weatherLastUpdatedTextView)
         lastUpdatedTextView = findViewById(R.id.lastUpdatedTextView)
         notificationsButton = findViewById(R.id.notificationsButton)
         menuButton = findViewById(R.id.menuButton)
@@ -147,9 +154,21 @@ class MainActivity : AppCompatActivity() {
             updateHoneyUI(honeyItems)
         }
         
+        // Observe weather
+        viewModel.weather.observe(this) { weather ->
+            updateWeatherUI(weather)
+        }
+        
         // Observe last updated times
         viewModel.lastUpdated.observe(this) { (stocksTime, eggsTime, honeyTime) ->
             lastUpdatedTextView.text = "Last Updated - Stocks: $stocksTime | Eggs: $eggsTime | Honey: $honeyTime"
+        }
+        
+        // Observe weather last updated time
+        viewModel.weatherLastUpdated.observe(this) { weatherTime ->
+            if (weatherTime.isNotEmpty()) {
+                weatherLastUpdatedTextView.text = "Last Updated: $weatherTime"
+            }
         }
     }
     
@@ -185,6 +204,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun updateWeatherUI(weather: Weather?) {
+        if (weather != null) {
+            weatherTitleTextView.text = weather.title
+            weatherDescriptionTextView.text = weather.description
+        } else {
+            weatherTitleTextView.text = "No weather information available"
+            weatherDescriptionTextView.text = ""
+        }
+    }
+    
     private fun checkForUpdates() {
         lifecycleScope.launch {
             val updateResult = appUpdateChecker.checkForUpdate()
@@ -199,7 +228,10 @@ class MainActivity : AppCompatActivity() {
                 val stocksTime = snapshot.child("stocks").child("ph").getValue(String::class.java) ?: ""
                 val eggsTime = snapshot.child("eggs").child("ph").getValue(String::class.java) ?: ""
                 val honeyTime = snapshot.child("honeyStocks").child("ph").getValue(String::class.java) ?: ""
+                val weatherTime = snapshot.child("weather").child("ph").getValue(String::class.java) ?: ""
+                
                 viewModel.updateLastUpdated(stocksTime, eggsTime, honeyTime)
+                viewModel.updateWeatherLastUpdated(weatherTime)
             }
             
             override fun onCancelled(error: DatabaseError) {

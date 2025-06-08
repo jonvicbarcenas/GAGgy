@@ -88,6 +88,60 @@
             android:orientation="vertical">
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/weatherCard"
+                style="@style/GAGgyCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/GAGgyCardTitle"
+                        android:text="Weather" />
+
+                    <LinearLayout
+                        android:id="@+id/weatherLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="16dp"
+                        android:paddingBottom="16dp">
+
+                        <TextView
+                            android:id="@+id/weatherTitleTextView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:paddingTop="8dp"
+                            tools:text="❄️ Snow Alert!" />
+
+                        <TextView
+                            android:id="@+id/weatherDescriptionTextView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="14sp"
+                            android:paddingTop="4dp"
+                            tools:text="Snow increases growth speed and has a higher chance to freeze fruit (x10 value) or chill fruit (x2 value). It occurs as rarely as rain." />
+
+                        <TextView
+                            android:id="@+id/weatherLastUpdatedTextView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="12sp"
+                            android:alpha="0.7"
+                            android:paddingTop="8dp"
+                            tools:text="Last Updated: 2025-06-08 06:26:06 PM" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/seedsCard"
                 style="@style/GAGgyCard"
                 android:layout_width="match_parent"
