@@ -16,7 +16,6 @@ enum class ItemType {
     GEAR,
     SEED,
     EGG,
-    HONEY,
     WEATHER,
     UNKNOWN
 } 

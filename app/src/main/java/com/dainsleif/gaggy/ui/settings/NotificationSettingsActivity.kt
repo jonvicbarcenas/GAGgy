@@ -74,11 +74,6 @@ class NotificationSettingsActivity : AppCompatActivity() {
             setupItemsSection("Egg Notification Settings", eggItems, ItemType.EGG)
         }
         
-        // Observe honey items
-        viewModel.honeyItems.observe(this) { honeyItems ->
-            setupItemsSection("Honey Notification Settings", honeyItems, ItemType.HONEY)
-        }
-        
         // Observe weather alerts
         viewModel.weatherAlerts.observe(this) { weatherAlerts ->
             setupItemsSection("Weather Alert Settings", weatherAlerts, ItemType.WEATHER)

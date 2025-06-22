@@ -104,13 +104,11 @@ class StockMonitorWorker(
         val gearItems = itemRepository.getGearItems()
         val seedItems = itemRepository.getSeedItems()
         val eggItems = itemRepository.getEggItems()
-        val honeyItems = itemRepository.getHoneyItems()
         
         // Check each type of item
         checkForNotifications(gearItems, ItemType.GEAR)
         checkForNotifications(seedItems, ItemType.SEED)
         checkForNotifications(eggItems, ItemType.EGG)
-        checkForNotifications(honeyItems, ItemType.HONEY)
         
         // Wait a bit to ensure Firebase data is processed
         delay(5000)

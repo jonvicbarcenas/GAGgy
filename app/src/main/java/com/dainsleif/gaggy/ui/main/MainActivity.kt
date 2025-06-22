@@ -38,11 +38,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var seedsLayout: LinearLayout
     private lateinit var gearLayout: LinearLayout
     private lateinit var eggsLayout: LinearLayout
-    private lateinit var honeyLayout: LinearLayout
     private lateinit var weatherTitleTextView: TextView
     private lateinit var weatherDescriptionTextView: TextView
-    private lateinit var weatherLastUpdatedTextView: TextView
     private lateinit var lastUpdatedTextView: TextView
+    private lateinit var weatherLastUpdatedTextView: TextView
     private lateinit var notificationsButton: Button
     private lateinit var menuButton: ImageButton
     private lateinit var viewModel: MainViewModel
@@ -96,11 +95,10 @@ class MainActivity : AppCompatActivity() {
         seedsLayout = findViewById(R.id.seedsLayout)
         gearLayout = findViewById(R.id.gearLayout)
         eggsLayout = findViewById(R.id.eggsLayout)
-        honeyLayout = findViewById(R.id.honeyLayout)
         weatherTitleTextView = findViewById(R.id.weatherTitleTextView)
         weatherDescriptionTextView = findViewById(R.id.weatherDescriptionTextView)
-        weatherLastUpdatedTextView = findViewById(R.id.weatherLastUpdatedTextView)
         lastUpdatedTextView = findViewById(R.id.lastUpdatedTextView)
+        weatherLastUpdatedTextView = findViewById(R.id.weatherLastUpdatedTextView)
         notificationsButton = findViewById(R.id.notificationsButton)
         menuButton = findViewById(R.id.menuButton)
         
@@ -149,19 +147,14 @@ class MainActivity : AppCompatActivity() {
             updateEggUI(eggItems)
         }
         
-        // Observe honey items
-        viewModel.honeyItems.observe(this) { honeyItems ->
-            updateHoneyUI(honeyItems)
-        }
-        
         // Observe weather
         viewModel.weather.observe(this) { weather ->
             updateWeatherUI(weather)
         }
         
         // Observe last updated times
-        viewModel.lastUpdated.observe(this) { (stocksTime, eggsTime, honeyTime) ->
-            lastUpdatedTextView.text = "Last Updated - Stocks: $stocksTime | Eggs: $eggsTime | Honey: $honeyTime"
+        viewModel.lastUpdated.observe(this) { (stocksTime, eggsTime) ->
+            lastUpdatedTextView.text = "Last Updated - Stocks: $stocksTime | Eggs: $eggsTime"
         }
         
         // Observe weather last updated time
@@ -196,14 +189,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun updateHoneyUI(items: List<Item>) {
-        honeyLayout.removeAllViews()
-        addSectionHeader(honeyLayout, "HONEY STOCK")
-        items.forEach { item ->
-            addItemToSection(honeyLayout, "${item.name}: ${item.quantity}")
-        }
-    }
-    
     private fun updateWeatherUI(weather: Weather?) {
         if (weather != null) {
             weatherTitleTextView.text = weather.title
@@ -227,10 +212,9 @@ class MainActivity : AppCompatActivity() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val stocksTime = snapshot.child("stocks").child("ph").getValue(String::class.java) ?: ""
                 val eggsTime = snapshot.child("eggs").child("ph").getValue(String::class.java) ?: ""
-                val honeyTime = snapshot.child("honeyStocks").child("ph").getValue(String::class.java) ?: ""
                 val weatherTime = snapshot.child("weather").child("ph").getValue(String::class.java) ?: ""
                 
-                viewModel.updateLastUpdated(stocksTime, eggsTime, honeyTime)
+                viewModel.updateLastUpdated(stocksTime, eggsTime)
                 viewModel.updateWeatherLastUpdated(weatherTime)
             }
             

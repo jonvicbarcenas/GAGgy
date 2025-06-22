@@ -26,14 +26,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _eggItems = MutableLiveData<List<Item>>()
     val eggItems: LiveData<List<Item>> = _eggItems
     
-    private val _honeyItems = MutableLiveData<List<Item>>()
-    val honeyItems: LiveData<List<Item>> = _honeyItems
-    
     private val _weather = MutableLiveData<Weather?>()
     val weather: LiveData<Weather?> = _weather
     
-    private val _lastUpdated = MutableLiveData<Triple<String, String, String>>()
-    val lastUpdated: LiveData<Triple<String, String, String>> = _lastUpdated
+    private val _lastUpdated = MutableLiveData<Pair<String, String>>()
+    val lastUpdated: LiveData<Pair<String, String>> = _lastUpdated
     
     private val _weatherLastUpdated = MutableLiveData<String>()
     val weatherLastUpdated: LiveData<String> = _weatherLastUpdated
@@ -63,12 +60,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _eggItems.value = eggItems
                 if (isChanged) {
                     checkForNotifications(eggItems, ItemType.EGG)
-                }
-            },
-            onHoneyUpdated = { honeyItems, isChanged ->
-                _honeyItems.value = honeyItems
-                if (isChanged) {
-                    checkForNotifications(honeyItems, ItemType.HONEY)
                 }
             },
             onWeatherUpdated = { weather ->
@@ -105,9 +96,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Update last updated times
      */
-    fun updateLastUpdated(stocksTime: String, eggsTime: String, honeyTime: String) {
-        _lastUpdated.value = Triple(stocksTime, eggsTime, honeyTime)
-        itemRepository.updateCurrentLastUpdated(stocksTime, eggsTime, honeyTime)
+    fun updateLastUpdated(stocksTime: String, eggsTime: String) {
+        _lastUpdated.value = Pair(stocksTime, eggsTime)
+        itemRepository.updateCurrentLastUpdated(stocksTime, eggsTime)
     }
     
     /**
@@ -118,7 +109,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         itemRepository.updateCurrentLastUpdated(
             _lastUpdated.value?.first ?: "",
             _lastUpdated.value?.second ?: "",
-            _lastUpdated.value?.third ?: "",
             weatherTime
         )
     }

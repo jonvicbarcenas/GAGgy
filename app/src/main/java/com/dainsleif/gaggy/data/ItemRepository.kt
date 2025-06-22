@@ -24,8 +24,7 @@ class ItemRepository private constructor(context: Context) {
     private var previousItems = mapOf<ItemType, List<Item>>(
         ItemType.GEAR to emptyList(),
         ItemType.SEED to emptyList(),
-        ItemType.EGG to emptyList(),
-        ItemType.HONEY to emptyList()
+        ItemType.EGG to emptyList()
     )
     
     // Store current weather information
@@ -36,7 +35,6 @@ class ItemRepository private constructor(context: Context) {
         ItemType.GEAR to "",
         ItemType.SEED to "",
         ItemType.EGG to "",
-        ItemType.HONEY to "",
         ItemType.WEATHER to ""
     )
     
@@ -56,72 +54,61 @@ class ItemRepository private constructor(context: Context) {
         
         // Lists of available items
         val GEARS = listOf(
-            "Watering Can",
-            "Trowel",
-            "Favorite Tool",
             "Basic Sprinkler",
-            "Godly Sprinkler",
             "Advanced Sprinkler",
-            "Master Sprinkler",
+            "Godly Sprinkler",
             "Lightning Rod",
-            "Recall Wrench"
+            "Master Sprinkler",
+            "Trowel",
+            "Recall Wrench",
+            "Favorite Tool",
+            "Watering Can",
+            "Friendship Pot",
+            "Cleaning Spray",
+            "Tanning Mirror"
         )
         
         val SEEDS = listOf(
-            "Carrot",
-            "Strawberry",
-            "Blueberry",
-            "Orange Tulip",
-            "Tomato",
-            "Bamboo",
+            "Cauliflower",
             "Watermelon",
-            "Apple",
-            "Pepper",
-            "Mango",
-            "Daffodil",
-            "Pumpkin",
-            "Corn",
-            "Coconut",
-            "Cactus",
-            "Cacao",
-            "Dragon Fruit",
-            "Grape",
-            "Mushroom",
-            "Beanstalk",
-            "Ember Lily"
+            "Green Apple",
+            "Avocado",
+            "Banana",
+            "Pineapple",
+            "Kiwi",
+            "Bell Pepper",
+            "Prickly Pear",
+            "Loquat",
+            "Feijoa",
+            "Sugar Apple"
         )
         
         val EGGS = listOf(
             "Common Egg",
-            "Rare Egg",
+            "Common Summer Egg",
             "Uncommon Egg",
+            "Rare Egg",
+            "Rare Summer Egg",
             "Legendary Egg",
             "Bug Egg",
-            "Mythical Egg"
-        )
-        
-        val HONEY_ITEMS = listOf(
-            "Flower Seed Pack",
-            "Lavender",
-            "Nectarshade",
-            "Nectarine",
-            "Hive Fruit",
-            "Pollen Radar",
-            "Nectar Staff",
-            "Honey Sprinkler",
-            "Bee Egg",
-            "Bee Crate",
-            "Honey Comb",
-            "Bee Chair",
-            "Honey Torch",
-            "Honey Walkway"
+            "Mythical Egg",
+            "Paradise Egg"
         )
         
         val WEATHER_ALERTS = listOf(
-            "🌧️ Rain Alert!",
-            "❄️ Snow Alert!",
-            "⛈️ Thunderstorm Alert!",
-            "☄️ Meteor Shower Alert!"
+            "Disco",
+            "Blackhole",
+            "Jandelstorm",
+            "Volcano",
+            "Chocolate Rain",
+            "Windy",
+            "Tornado",
+            "Raining",
+            "Thunder",
+            "Snow",
+            "Night",
+            "Blood Moon",
+            "Meteor Shower"
         )
     }
     
@@ -157,12 +144,11 @@ class ItemRepository private constructor(context: Context) {
     /**
      * Update current last updated times
      */
-    fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, honeyTime: String, weatherTime: String = "") {
+    fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, weatherTime: String = "") {
         currentLastUpdated = mapOf(
             ItemType.GEAR to stocksTime,
             ItemType.SEED to stocksTime,
             ItemType.EGG to eggsTime,
-            ItemType.HONEY to honeyTime,
             ItemType.WEATHER to weatherTime
         )
     }
@@ -193,7 +179,6 @@ class ItemRepository private constructor(context: Context) {
             ItemType.GEAR -> GEARS
             ItemType.SEED -> SEEDS
             ItemType.EGG -> EGGS
-            ItemType.HONEY -> HONEY_ITEMS
             ItemType.WEATHER -> WEATHER_ALERTS
             else -> emptyList()
         }
@@ -210,7 +195,6 @@ class ItemRepository private constructor(context: Context) {
         onGearUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
         onSeedUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
         onEggUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
-        onHoneyUpdated: (List<Item>, Boolean) -> Unit = { _, _ -> },
         onWeatherUpdated: (Weather) -> Unit = { }
     ) {
         // Listen for all data changes
@@ -220,27 +204,23 @@ class ItemRepository private constructor(context: Context) {
                 val gearItems = processGearStock(snapshot)
                 val seedItems = processSeedStock(snapshot)
                 val eggItems = processEggStock(snapshot)
-                val honeyItems = processHoneyStock(snapshot)
                 val weather = processWeather(snapshot)
                 
                 // Check for any items with enabled notifications
                 val hasEnabledGearItems = gearItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 val hasEnabledSeedItems = seedItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 val hasEnabledEggItems = eggItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
-                val hasEnabledHoneyItems = honeyItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 
                 // Determine if there are actual changes in items with notifications enabled
                 val gearChanged = hasEnabledGearItems && hasItemsChanged(gearItems, previousItems[ItemType.GEAR] ?: emptyList())
                 val seedChanged = hasEnabledSeedItems && hasItemsChanged(seedItems, previousItems[ItemType.SEED] ?: emptyList())
                 val eggChanged = hasEnabledEggItems && hasItemsChanged(eggItems, previousItems[ItemType.EGG] ?: emptyList())
-                val honeyChanged = hasEnabledHoneyItems && hasItemsChanged(honeyItems, previousItems[ItemType.HONEY] ?: emptyList())
                 
                 // Update previous items after checking
                 previousItems = mapOf(
                     ItemType.GEAR to gearItems,
                     ItemType.SEED to seedItems,
-                    ItemType.EGG to eggItems,
-                    ItemType.HONEY to honeyItems
+                    ItemType.EGG to eggItems
                 )
                 
                 // Update current weather
@@ -250,7 +230,6 @@ class ItemRepository private constructor(context: Context) {
                 onGearUpdated(gearItems, gearChanged)
                 onSeedUpdated(seedItems, seedChanged)
                 onEggUpdated(eggItems, eggChanged)
-                onHoneyUpdated(honeyItems, honeyChanged)
                 if (weather != null) {
                     onWeatherUpdated(weather)
                 }
@@ -333,25 +312,6 @@ class ItemRepository private constructor(context: Context) {
             return eggItems
         } catch (e: Exception) {
             Log.e(TAG, "Error processing egg stock: ${e.message}")
-            return emptyList()
-        }
-    }
-    
-    private fun processHoneyStock(snapshot: DataSnapshot): List<Item> {
-        try {
-            val honeyItems = mutableListOf<Item>()
-            val honeySnapshot = snapshot.child("honeyStocks").child("HONEY STOCK")
-            
-            honeySnapshot.children.forEach { itemSnapshot ->
-                val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
-                val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 0
-                
-                honeyItems.add(Item(name, quantity, ItemType.HONEY))
-            }
-            
-            return honeyItems
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing honey stock: ${e.message}")
             return emptyList()
         }
     }
@@ -483,27 +443,6 @@ class ItemRepository private constructor(context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error getting egg items: ${e.message}")
-        }
-        
-        return items
-    }
-    
-    /**
-     * Get current honey items
-     */
-    suspend fun getHoneyItems(): List<Item> {
-        val items = mutableListOf<Item>()
-        try {
-            val dataSnapshot = database.child("honeyStocks").child("HONEY STOCK").get().await()
-            
-            dataSnapshot.children.forEach { itemSnapshot ->
-                val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
-                val quantity = itemSnapshot.child("quantity").getValue(Int::class.java) ?: 0
-                
-                items.add(Item(name, quantity, ItemType.HONEY))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting honey items: ${e.message}")
         }
         
         return items
