@@ -118,13 +118,21 @@ class StockMonitorWorker(
      * Check if any items need notifications
      */
     private fun checkForNotifications(items: List<Item>, itemType: ItemType) {
-        items.forEach { item ->
-            // If quantity is greater than 0 and notifications are enabled for this item, send notification
-            if (item.quantity > 0 && itemRepository.isNotificationEnabled(item.name) && 
-                itemRepository.hasNewerUpdate(item.name, itemType)) {
-                Log.d(TAG, "Sending notification for ${item.name} with quantity ${item.quantity}")
+        // Filter items that need notifications (have quantity > 0 and notifications enabled)
+        val itemsToNotify = items.filter { item ->
+            item.quantity > 0 && itemRepository.isNotificationEnabled(item.name)
+        }
+        
+        // If there are items to notify, create notifications
+        if (itemsToNotify.isNotEmpty()) {
+            // Create notifications for each item
+            itemsToNotify.forEach { item ->
                 notificationHelper.createItemNotification(item)
             }
+            
+            // Log the items being notified
+            val itemNames = itemsToNotify.joinToString(", ") { it.name }
+            Log.d(TAG, "Sending notifications for: $itemNames")
         }
     }
 }

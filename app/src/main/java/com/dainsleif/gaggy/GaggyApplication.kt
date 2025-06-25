@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.dainsleif.gaggy.notifications.NotificationChannelManager
+import com.dainsleif.gaggy.util.ForegroundService
 import com.dainsleif.gaggy.util.WorkManagerUtil
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
@@ -34,6 +35,9 @@ class GaggyApplication : Application(), Configuration.Provider {
         
         // Initialize WorkManager for background processing
         initializeWorkManager()
+        
+        // Start the foreground service
+        startForegroundService()
     }
     
     /**
@@ -74,6 +78,20 @@ class GaggyApplication : Application(), Configuration.Provider {
         
         // Schedule the stock monitoring worker
         WorkManagerUtil.scheduleStockMonitoring(this)
+    }
+    
+    /**
+     * Start the foreground service to keep the app running
+     */
+    private fun startForegroundService() {
+        Log.d(TAG, "Starting foreground service")
+        try {
+            ForegroundService.startService(this)
+            Log.d(TAG, "Foreground service start requested successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start foreground service: ${e.message}")
+            e.printStackTrace()
+        }
     }
     
     /**

@@ -115,9 +115,21 @@ class MediaManager private constructor(private val context: Context) {
      * Stop all media playback and vibration
      */
     fun stopAllMedia() {
-        stopMediaPlayer()
-        stopVibration()
-        stopSystemSounds()
+        Log.d(TAG, "Stopping all media")
+        try {
+            stopMediaPlayer()
+            stopVibration()
+            stopSystemSounds()
+            Log.d(TAG, "All media stopped successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping all media: ${e.message}")
+            e.printStackTrace()
+            
+            // Try individual stops with separate try-catch blocks
+            try { stopMediaPlayer() } catch (e: Exception) { Log.e(TAG, "MediaPlayer stop failed: ${e.message}") }
+            try { stopVibration() } catch (e: Exception) { Log.e(TAG, "Vibration stop failed: ${e.message}") }
+            try { stopSystemSounds() } catch (e: Exception) { Log.e(TAG, "System sounds stop failed: ${e.message}") }
+        }
     }
     
     private fun stopMediaPlayer() {

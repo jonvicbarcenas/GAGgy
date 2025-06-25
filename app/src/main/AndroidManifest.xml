@@ -42,7 +42,23 @@
             </intent-filter>
         </activity>
         
-        <!-- Register the notification stop receiver -->
+        <!-- Foreground Service -->
+        <service
+            android:name=".util.ForegroundService"
+            android:enabled="true"
+            android:exported="false" />
+            
+        <!-- Boot Receiver to restart service on device boot -->
+        <receiver
+            android:name=".receivers.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        
+        <!-- Notification Stop Receiver -->
         <receiver
             android:name=".receivers.NotificationStopReceiver"
             android:exported="false">
@@ -50,28 +66,17 @@
                 <action android:name="com.dainsleif.gaggy.STOP_NOTIFICATION" />
             </intent-filter>
         </receiver>
-        
-        <!-- Register the boot completed receiver -->
-        <receiver
-            android:name=".receivers.BootCompletedReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-        
-        <!-- Firebase Cloud Messaging Service -->
+
+        <!-- Firebase Messaging Service -->
         <service
-            android:name=".notifications.FCMService"
+            android:name=".notifications.FirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
         
-        <!-- Declare the WorkManager service with foreground service type -->
+        <!-- Declare WorkManager service with foreground service type -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"

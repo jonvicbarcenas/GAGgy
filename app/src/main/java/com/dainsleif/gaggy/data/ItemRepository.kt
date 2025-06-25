@@ -247,17 +247,29 @@ class ItemRepository private constructor(context: Context) {
         // If sizes are different, something changed
         if (newItems.size != oldItems.size) return true
         
-        // Check each item with notifications enabled for quantity changes
+        // Create maps for easier comparison
         val oldItemMap = oldItems.associateBy { it.name }
+        val newItemMap = newItems.associateBy { it.name }
         
-        return newItems.any { newItem ->
-            // Only check items with enabled notifications
+        // Check for new items or quantity changes in items with notifications enabled
+        val hasNewOrChangedItems = newItems.any { newItem ->
             if (isNotificationEnabled(newItem.name) && newItem.quantity > 0) {
                 val oldItem = oldItemMap[newItem.name]
                 // Either the item is new, or its quantity changed
                 oldItem == null || oldItem.quantity != newItem.quantity
             } else false
         }
+        
+        // Check for items that disappeared
+        val hasRemovedItems = oldItems.any { oldItem ->
+            if (isNotificationEnabled(oldItem.name) && oldItem.quantity > 0) {
+                val newItem = newItemMap[oldItem.name]
+                // Item was removed or quantity changed to 0
+                newItem == null || newItem.quantity == 0
+            } else false
+        }
+        
+        return hasNewOrChangedItems || hasRemovedItems
     }
     
     private fun processGearStock(snapshot: DataSnapshot): List<Item> {

@@ -44,5 +44,11 @@ class NotificationSettingsViewModel(application: Application) : AndroidViewModel
      */
     fun updateNotificationSetting(itemName: String, enabled: Boolean) {
         itemRepository.saveItemNotificationPreference(itemName, enabled)
+        
+        // Reset the last updated time when enabling notifications
+        // This ensures the next update will trigger a notification
+        if (enabled) {
+            itemRepository.saveItemLastUpdatedTime(itemName, "")
+        }
     }
 } 

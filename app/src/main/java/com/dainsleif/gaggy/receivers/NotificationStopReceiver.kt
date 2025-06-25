@@ -3,9 +3,10 @@ package com.dainsleif.gaggy.receivers
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
-import com.dainsleif.gaggy.data.ItemRepository
-import com.dainsleif.gaggy.data.models.ItemType
+import android.widget.Toast
 import com.dainsleif.gaggy.notifications.NotificationHelper
 
 /**
@@ -17,36 +18,41 @@ class NotificationStopReceiver : BroadcastReceiver() {
     }
     
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d(TAG, "NotificationStopReceiver received: ${intent.action}")
+        
         if (intent.action == NotificationHelper.ACTION_STOP_NOTIFICATION) {
             // Get notification ID from intent
             val notificationId = intent.getIntExtra("notification_id", -1)
             val itemName = intent.getStringExtra("item_name") ?: ""
-            val itemTypeOrdinal = intent.getIntExtra("item_type", -1)
             
-            if (notificationId != -1 && itemName.isNotEmpty() && itemTypeOrdinal >= 0) {
-                // Use the NotificationHelper singleton to stop the notification
-                val notificationHelper = NotificationHelper.getInstance(context)
+            Log.d(TAG, "Stopping notification: ID=$notificationId, name=$itemName")
+            
+            // Show toast to confirm action
+            showToast(context, "Stopping notification for: $itemName")
+            
+            // Use the NotificationHelper singleton to stop the notification
+            val notificationHelper = NotificationHelper.getInstance(context)
+            
+            // First try to stop all notifications as a failsafe
+            notificationHelper.stopAllNotifications()
+            
+            if (notificationId != -1) {
+                // Then specifically stop this notification
                 notificationHelper.stopNotification(notificationId)
-                
-                // Save the last updated time
-                val itemRepository = ItemRepository.getInstance(context)
-                val itemType = ItemType.values()[itemTypeOrdinal]
-                val lastUpdated = itemRepository.getCurrentLastUpdatedTime(itemType)
-                
-                if (lastUpdated.isNotEmpty()) {
-                    itemRepository.saveItemLastUpdatedTime(itemName, lastUpdated)
-                    Log.d(TAG, "Saved last updated time for $itemName: $lastUpdated")
-                }
-                
                 Log.d(TAG, "Notification stopped: $notificationId for item: $itemName")
             } else {
-                // Fallback to just stopping notification without saving time
-                if (notificationId != -1) {
-                    val notificationHelper = NotificationHelper.getInstance(context)
-                    notificationHelper.stopNotification(notificationId)
-                    Log.d(TAG, "Notification stopped: $notificationId (no item info)")
-                }
+                Log.d(TAG, "Invalid notification ID, stopping all notifications")
             }
+        }
+    }
+    
+    private fun showToast(context: Context, message: String) {
+        try {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing toast: ${e.message}")
         }
     }
 } 

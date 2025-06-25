@@ -24,10 +24,20 @@ class NotificationHelper private constructor(private val context: Context) {
     private val mediaManager = MediaManager.getInstance(context)
     private var activeNotificationId: Int? = null
     
+    // Keep track of pending items for batch notifications
+    private val pendingItems = mutableMapOf<ItemType, MutableList<Item>>()
+    
     companion object {
         const val ACTION_STOP_NOTIFICATION = "com.dainsleif.gaggy.STOP_NOTIFICATION"
         private const val TAG = "NotificationHelper"
         private const val ANNOUNCEMENT_NOTIFICATION_ID = 9999
+        private const val BATCH_NOTIFICATION_DELAY_MS = 500L // Delay to batch notifications
+        
+        // Notification IDs for batch notifications
+        private const val GEAR_BATCH_NOTIFICATION_ID = 1001
+        private const val SEED_BATCH_NOTIFICATION_ID = 2001
+        private const val EGG_BATCH_NOTIFICATION_ID = 3001
+        private const val WEATHER_BATCH_NOTIFICATION_ID = 4001
         
         // Singleton instance
         @Volatile
@@ -46,6 +56,9 @@ class NotificationHelper private constructor(private val context: Context) {
      */
     fun showAnnouncementNotification(title: String, message: String) {
         Log.d(TAG, "Showing announcement notification: $title")
+        
+        // First, stop any existing notifications to prevent double sound
+        stopAllNotifications()
         
         // Create an intent to open the app when notification is clicked
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -81,30 +94,62 @@ class NotificationHelper private constructor(private val context: Context) {
     }
     
     /**
-     * Create a notification for an item
+     * Add item to batch and create notification after a short delay
      */
     fun createItemNotification(item: Item) {
-        Log.d(TAG, "Creating notification for ${item.name}")
+        Log.d(TAG, "Adding item to batch: ${item.name}")
+        
+        // Add the item to the pending list for its type
+        synchronized(pendingItems) {
+            if (!pendingItems.containsKey(item.type)) {
+                pendingItems[item.type] = mutableListOf()
+            }
+            pendingItems[item.type]?.add(item)
+        }
+        
+        // Schedule a delayed notification to batch multiple items
+        android.os.Handler(context.mainLooper).postDelayed({
+            processPendingItems(item.type)
+        }, BATCH_NOTIFICATION_DELAY_MS)
+    }
+    
+    /**
+     * Process all pending items of a specific type and create a batch notification
+     */
+    private fun processPendingItems(itemType: ItemType) {
+        val items: List<Item>
+        
+        // Get and clear the pending items atomically
+        synchronized(pendingItems) {
+            items = pendingItems[itemType]?.toList() ?: listOf()
+            pendingItems[itemType]?.clear()
+        }
+        
+        if (items.isEmpty()) {
+            return
+        }
+        
+        Log.d(TAG, "Creating batch notification for ${items.size} ${itemType.name} items")
         
         // First, stop any existing notifications to prevent double sound
         stopAllNotifications()
         
-        val channelId = when (item.type) {
+        val channelId = when (itemType) {
             ItemType.GEAR -> NotificationChannelManager.GEAR_CHANNEL_ID
             ItemType.SEED -> NotificationChannelManager.SEED_CHANNEL_ID
             ItemType.EGG -> NotificationChannelManager.EGG_CHANNEL_ID
             else -> NotificationChannelManager.GEAR_CHANNEL_ID
         }
         
-        // Create notification builder
-        val builder = createNotificationBuilder(item, channelId)
+        // Create notification builder for batch
+        val builder = createBatchNotificationBuilder(items, itemType, channelId)
         
         // Add flags to ensure alert is shown
         val notification = builder.build()
         notification.flags = notification.flags or Notification.FLAG_INSISTENT
         
         // Send the notification
-        val notificationId = getNotificationId(item.name)
+        val notificationId = getBatchNotificationId(itemType)
         notificationManager.notify(notificationId, notification)
         activeNotificationId = notificationId
         
@@ -113,7 +158,7 @@ class NotificationHelper private constructor(private val context: Context) {
         mediaManager.playNotificationSound(soundUri)
         mediaManager.startVibration(10000L) // 10 seconds
         
-        Log.d(TAG, "Notification created for: ${item.name} with ID: $notificationId")
+        Log.d(TAG, "Batch notification created for ${items.size} ${itemType.name} items with ID: $notificationId")
     }
     
     /**
@@ -138,7 +183,7 @@ class NotificationHelper private constructor(private val context: Context) {
         
         val pendingIntent = PendingIntent.getActivity(
             context,
-            getNotificationId(weather.title),
+            WEATHER_BATCH_NOTIFICATION_ID,
             intent,
             pendingIntentFlags
         )
@@ -146,16 +191,23 @@ class NotificationHelper private constructor(private val context: Context) {
         // Create a stop action intent
         val stopIntent = Intent(context, NotificationStopReceiver::class.java).apply {
             action = ACTION_STOP_NOTIFICATION
-            putExtra("notification_id", getNotificationId(weather.title))
+            putExtra("notification_id", WEATHER_BATCH_NOTIFICATION_ID)
             putExtra("item_name", weather.title)
             putExtra("item_type", ItemType.WEATHER.ordinal)
         }
         
+        // Use FLAG_CANCEL_CURRENT to ensure the intent is recreated each time
+        val stopPendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_CANCEL_CURRENT
+        }
+        
         val stopPendingIntent = PendingIntent.getBroadcast(
             context,
-            getNotificationId(weather.title) + 2000, // Different ID to avoid conflicts
+            WEATHER_BATCH_NOTIFICATION_ID + 2000, // Different ID to avoid conflicts
             stopIntent,
-            pendingIntentFlags
+            stopPendingIntentFlags
         )
         
         // Create the notification
@@ -173,8 +225,8 @@ class NotificationHelper private constructor(private val context: Context) {
             .setDefaults(0) // No defaults
             .setSound(null) // No sound
             .setOngoing(true) // Make it persistent until explicitly dismissed
-            // Add stop action
-            .addAction(android.R.drawable.ic_media_pause, "Stop", stopPendingIntent)
+            // Add stop action with a clear icon and text
+            .addAction(android.R.drawable.ic_delete, "STOP", stopPendingIntent)
             // Ensure notification pops up on screen
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         
@@ -183,16 +235,15 @@ class NotificationHelper private constructor(private val context: Context) {
         notification.flags = notification.flags or Notification.FLAG_INSISTENT
         
         // Send the notification
-        val notificationId = getNotificationId(weather.title)
-        notificationManager.notify(notificationId, notification)
-        activeNotificationId = notificationId
+        notificationManager.notify(WEATHER_BATCH_NOTIFICATION_ID, notification)
+        activeNotificationId = WEATHER_BATCH_NOTIFICATION_ID
         
         // Play sound and start vibration
         val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.urgent}")
         mediaManager.playNotificationSound(soundUri)
         mediaManager.startVibration(10000L) // 10 seconds
         
-        Log.d(TAG, "Notification created for weather: ${weather.title} with ID: $notificationId")
+        Log.d(TAG, "Notification created for weather: ${weather.title} with ID: $WEATHER_BATCH_NOTIFICATION_ID")
     }
     
     /**
@@ -200,11 +251,33 @@ class NotificationHelper private constructor(private val context: Context) {
      */
     fun stopNotification(notificationId: Int) {
         Log.d(TAG, "Stopping notification: $notificationId")
-        mediaManager.stopAllMedia()
-        notificationManager.cancel(notificationId)
-        
-        if (activeNotificationId == notificationId) {
-            activeNotificationId = null
+        try {
+            // First stop all media
+            mediaManager.stopAllMedia()
+            
+            // Cancel the specific notification
+            notificationManager.cancel(notificationId)
+            
+            // Also cancel all notifications as a failsafe
+            notificationManager.cancelAll()
+            
+            // Reset active notification ID
+            if (activeNotificationId == notificationId) {
+                activeNotificationId = null
+            }
+            
+            Log.d(TAG, "Successfully stopped notification: $notificationId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping notification: ${e.message}")
+            e.printStackTrace()
+            
+            // Try again with a different approach
+            try {
+                notificationManager.cancelAll()
+                Log.d(TAG, "Canceled all notifications as fallback")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error canceling all notifications: ${e.message}")
+            }
         }
     }
     
@@ -213,14 +286,33 @@ class NotificationHelper private constructor(private val context: Context) {
      */
     fun stopAllNotifications() {
         Log.d(TAG, "Stopping all notifications")
-        mediaManager.stopAllMedia()
-        activeNotificationId?.let {
-            notificationManager.cancel(it)
+        try {
+            // Stop all media first
+            mediaManager.stopAllMedia()
+            
+            // Cancel any active notification
+            activeNotificationId?.let {
+                notificationManager.cancel(it)
+                Log.d(TAG, "Canceled notification with ID: $it")
+            }
+            
+            // Cancel all notifications as a failsafe
+            notificationManager.cancelAll()
+            
+            // Reset active notification ID
+            activeNotificationId = null
+            
+            Log.d(TAG, "Successfully stopped all notifications")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping all notifications: ${e.message}")
+            e.printStackTrace()
         }
-        activeNotificationId = null
     }
     
-    private fun createNotificationBuilder(item: Item, channelId: String): NotificationCompat.Builder {
+    /**
+     * Create a notification builder for a batch of items
+     */
+    private fun createBatchNotificationBuilder(items: List<Item>, itemType: ItemType, channelId: String): NotificationCompat.Builder {
         // Create an intent to open the app when notification is clicked
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -232,9 +324,11 @@ class NotificationHelper private constructor(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
         
+        val notificationId = getBatchNotificationId(itemType)
+        
         val pendingIntent = PendingIntent.getActivity(
             context,
-            getNotificationId(item.name),
+            notificationId,
             intent,
             pendingIntentFlags
         )
@@ -242,7 +336,7 @@ class NotificationHelper private constructor(private val context: Context) {
         // Create a full screen intent for high priority notifications
         val fullScreenIntent = PendingIntent.getActivity(
             context,
-            getNotificationId(item.name) + 1000, // Different ID to avoid conflicts
+            notificationId + 1000, // Different ID to avoid conflicts
             intent,
             pendingIntentFlags
         )
@@ -250,23 +344,37 @@ class NotificationHelper private constructor(private val context: Context) {
         // Create a stop action intent
         val stopIntent = Intent(context, NotificationStopReceiver::class.java).apply {
             action = ACTION_STOP_NOTIFICATION
-            putExtra("notification_id", getNotificationId(item.name))
-            putExtra("item_name", item.name)
-            putExtra("item_type", item.type.ordinal)
+            putExtra("notification_id", notificationId)
+            putExtra("item_name", getItemTypeDisplayName(itemType))
+            putExtra("item_type", itemType.ordinal)
+        }
+        
+        // Use FLAG_CANCEL_CURRENT to ensure the intent is recreated each time
+        val stopPendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_CANCEL_CURRENT
         }
         
         val stopPendingIntent = PendingIntent.getBroadcast(
             context,
-            getNotificationId(item.name) + 2000, // Different ID to avoid conflicts
+            notificationId + 2000, // Different ID to avoid conflicts
             stopIntent,
-            pendingIntentFlags
+            stopPendingIntentFlags
         )
+        
+        // Create title and content based on items
+        val title = "${getItemTypeDisplayName(itemType)} Available!"
+        val content = buildItemListText(items)
+        
+        Log.d(TAG, "Created batch notification: $title - $content")
         
         // Create the notification
         return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("${item.name} Available!")
-            .setContentText("${item.name} is now available with quantity: ${item.quantity}")
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(pendingIntent)
@@ -277,10 +385,53 @@ class NotificationHelper private constructor(private val context: Context) {
             .setDefaults(0) // No defaults
             .setSound(null) // No sound
             .setOngoing(true) // Make it persistent until explicitly dismissed
-            // Add stop action
-            .addAction(android.R.drawable.ic_media_pause, "Stop", stopPendingIntent)
+            // Add stop action with a clear icon and text
+            .addAction(android.R.drawable.ic_delete, "STOP", stopPendingIntent)
             // Ensure notification pops up on screen
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+    }
+    
+    /**
+     * Build text listing all items in a batch
+     */
+    private fun buildItemListText(items: List<Item>): String {
+        if (items.isEmpty()) return ""
+        if (items.size == 1) return "${items[0].name} is now available with quantity: ${items[0].quantity}"
+        
+        val builder = StringBuilder()
+        builder.append("The following items are now available:\n")
+        
+        items.forEach { item ->
+            builder.append("• ${item.name}: ${item.quantity}\n")
+        }
+        
+        return builder.toString().trim()
+    }
+    
+    /**
+     * Get the display name for an item type
+     */
+    private fun getItemTypeDisplayName(itemType: ItemType): String {
+        return when (itemType) {
+            ItemType.GEAR -> "Gear"
+            ItemType.SEED -> "Seeds"
+            ItemType.EGG -> "Eggs"
+            ItemType.WEATHER -> "Weather"
+            else -> "Items" // Default case for unknown item types
+        }
+    }
+    
+    /**
+     * Get notification ID for a batch based on item type
+     */
+    private fun getBatchNotificationId(itemType: ItemType): Int {
+        return when (itemType) {
+            ItemType.GEAR -> GEAR_BATCH_NOTIFICATION_ID
+            ItemType.SEED -> SEED_BATCH_NOTIFICATION_ID
+            ItemType.EGG -> EGG_BATCH_NOTIFICATION_ID
+            ItemType.WEATHER -> WEATHER_BATCH_NOTIFICATION_ID
+            else -> GEAR_BATCH_NOTIFICATION_ID // Default to gear ID for unknown types
+        }
     }
     
     // Generate a unique notification ID for each item

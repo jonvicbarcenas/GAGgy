@@ -1,6 +1,7 @@
 package com.dainsleif.gaggy.ui.main
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -34,6 +35,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     private val _weatherLastUpdated = MutableLiveData<String>()
     val weatherLastUpdated: LiveData<String> = _weatherLastUpdated
+    
+    companion object {
+        private const val TAG = "MainViewModel"
+    }
     
     init {
         startListeningForStockChanges()
@@ -73,12 +78,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Check if any items need notifications
      */
     private fun checkForNotifications(items: List<Item>, itemType: ItemType) {
-        items.forEach { item ->
-            // If quantity is greater than 0 and notifications are enabled for this item, send notification
-            if (item.quantity > 0 && itemRepository.isNotificationEnabled(item.name) && 
-                itemRepository.hasNewerUpdate(item.name, itemType)) {
+        // Filter items that need notifications (have quantity > 0 and notifications enabled)
+        val itemsToNotify = items.filter { item ->
+            item.quantity > 0 && itemRepository.isNotificationEnabled(item.name)
+        }
+        
+        // If there are items to notify, create notifications
+        if (itemsToNotify.isNotEmpty()) {
+            // Create notifications for each item
+            itemsToNotify.forEach { item ->
                 notificationHelper.createItemNotification(item)
             }
+            
+            // Log the items being notified
+            val itemNames = itemsToNotify.joinToString(", ") { it.name }
+            Log.d(TAG, "Sending notifications for: $itemNames")
         }
     }
     
