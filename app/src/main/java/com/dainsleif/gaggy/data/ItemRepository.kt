@@ -65,7 +65,8 @@ class ItemRepository private constructor(context: Context) {
             "Watering Can",
             "Friendship Pot",
             "Cleaning Spray",
-            "Tanning Mirror"
+            "Tanning Mirror",
+            "Harvest Tool"
         )
         
         val SEEDS = listOf(
