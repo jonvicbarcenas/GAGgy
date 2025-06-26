@@ -53,23 +53,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _gearItems.value = gearItems
                 if (isChanged) {
                     checkForNotifications(gearItems, ItemType.GEAR)
+                    // Mark the current timestamp as notified
+                    val timestamp = itemRepository.getCurrentLastUpdatedTime(ItemType.GEAR)
+                    if (timestamp.isNotEmpty()) {
+                        itemRepository.markNotificationShownForTimestamp(ItemType.GEAR, timestamp)
+                    }
                 }
             },
             onSeedUpdated = { seedItems, isChanged ->
                 _seedItems.value = seedItems
                 if (isChanged) {
                     checkForNotifications(seedItems, ItemType.SEED)
+                    // Mark the current timestamp as notified
+                    val timestamp = itemRepository.getCurrentLastUpdatedTime(ItemType.SEED)
+                    if (timestamp.isNotEmpty()) {
+                        itemRepository.markNotificationShownForTimestamp(ItemType.SEED, timestamp)
+                    }
                 }
             },
             onEggUpdated = { eggItems, isChanged ->
                 _eggItems.value = eggItems
                 if (isChanged) {
                     checkForNotifications(eggItems, ItemType.EGG)
+                    // Mark the current timestamp as notified
+                    val timestamp = itemRepository.getCurrentLastUpdatedTime(ItemType.EGG)
+                    if (timestamp.isNotEmpty()) {
+                        itemRepository.markNotificationShownForTimestamp(ItemType.EGG, timestamp)
+                    }
                 }
             },
             onWeatherUpdated = { weather ->
                 _weather.value = weather
                 checkForWeatherNotification(weather)
+                // Mark the current timestamp as notified
+                val timestamp = itemRepository.getCurrentLastUpdatedTime(ItemType.WEATHER)
+                if (timestamp.isNotEmpty()) {
+                    itemRepository.markNotificationShownForTimestamp(ItemType.WEATHER, timestamp)
+                }
             }
         )
     }

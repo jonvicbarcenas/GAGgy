@@ -7,6 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import com.dainsleif.gaggy.data.ItemRepository
+import com.dainsleif.gaggy.data.models.ItemType
 import com.dainsleif.gaggy.notifications.NotificationHelper
 
 /**
@@ -24,11 +26,30 @@ class NotificationStopReceiver : BroadcastReceiver() {
             // Get notification ID from intent
             val notificationId = intent.getIntExtra("notification_id", -1)
             val itemName = intent.getStringExtra("item_name") ?: ""
+            val itemTypeOrdinal = intent.getIntExtra("item_type", -1)
             
-            Log.d(TAG, "Stopping notification: ID=$notificationId, name=$itemName")
+            Log.d(TAG, "Stopping notification: ID=$notificationId, name=$itemName, type=$itemTypeOrdinal")
             
             // Show toast to confirm action
             showToast(context, "Stopping notification for: $itemName")
+            
+            // Get the ItemRepository to mark notification as handled
+            val itemRepository = ItemRepository.getInstance(context)
+            
+            // Mark the notification as shown for the current timestamp to prevent re-triggering
+            if (itemTypeOrdinal >= 0) {
+                try {
+                    val itemType = ItemType.values()[itemTypeOrdinal]
+                    val currentTimestamp = itemRepository.getCurrentLastUpdatedTime(itemType)
+                    
+                    if (currentTimestamp.isNotEmpty()) {
+                        itemRepository.markNotificationShownForTimestamp(itemType, currentTimestamp)
+                        Log.d(TAG, "Marked notification as shown for $itemType at timestamp: $currentTimestamp")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error marking notification as shown: ${e.message}")
+                }
+            }
             
             // Use the NotificationHelper singleton to stop the notification
             val notificationHelper = NotificationHelper.getInstance(context)

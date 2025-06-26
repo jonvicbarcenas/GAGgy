@@ -19,6 +19,7 @@ class ItemRepository private constructor(context: Context) {
     private val database = FirebaseDatabase.getInstance().reference.child("discord_data")
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE)
     private val lastUpdatedPrefs: SharedPreferences = context.getSharedPreferences("LastUpdated", Context.MODE_PRIVATE)
+    private val notificationStatePrefs: SharedPreferences = context.getSharedPreferences("NotificationState", Context.MODE_PRIVATE)
     
     // Store previous items to detect changes
     private var previousItems = mapOf<ItemType, List<Item>>(
@@ -143,6 +144,30 @@ class ItemRepository private constructor(context: Context) {
     }
     
     /**
+     * Records that a notification has been shown for a specific timestamp
+     */
+    fun markNotificationShownForTimestamp(itemType: ItemType, timestamp: String) {
+        val key = getNotificationStateKey(itemType, timestamp)
+        notificationStatePrefs.edit().putBoolean(key, true).apply()
+        Log.d(TAG, "Marked notification as shown for $itemType at timestamp: $timestamp")
+    }
+    
+    /**
+     * Check if a notification has already been shown for this timestamp
+     */
+    fun hasNotificationBeenShown(itemType: ItemType, timestamp: String): Boolean {
+        val key = getNotificationStateKey(itemType, timestamp)
+        return notificationStatePrefs.getBoolean(key, false)
+    }
+    
+    /**
+     * Create a unique key for storing notification state
+     */
+    private fun getNotificationStateKey(itemType: ItemType, timestamp: String): String {
+        return "${itemType.name}_$timestamp"
+    }
+    
+    /**
      * Update current last updated times
      */
     fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, weatherTime: String = "") {
@@ -207,15 +232,29 @@ class ItemRepository private constructor(context: Context) {
                 val eggItems = processEggStock(snapshot)
                 val weather = processWeather(snapshot)
                 
+                // Get the timestamp data
+                val stocksTime = snapshot.child("last_updated").child("stocks").child("ph").getValue(String::class.java) ?: ""
+                val eggsTime = snapshot.child("last_updated").child("eggs").child("ph").getValue(String::class.java) ?: ""
+                val weatherTime = snapshot.child("last_updated").child("weather").child("ph").getValue(String::class.java) ?: ""
+                
+                // Update current timestamps
+                updateCurrentLastUpdated(stocksTime, eggsTime, weatherTime)
+                
                 // Check for any items with enabled notifications
                 val hasEnabledGearItems = gearItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 val hasEnabledSeedItems = seedItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 val hasEnabledEggItems = eggItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 
-                // Determine if there are actual changes in items with notifications enabled
-                val gearChanged = hasEnabledGearItems && hasItemsChanged(gearItems, previousItems[ItemType.GEAR] ?: emptyList())
-                val seedChanged = hasEnabledSeedItems && hasItemsChanged(seedItems, previousItems[ItemType.SEED] ?: emptyList())
-                val eggChanged = hasEnabledEggItems && hasItemsChanged(eggItems, previousItems[ItemType.EGG] ?: emptyList())
+                // Check if notifications have already been shown for these timestamps
+                val gearNotificationShown = hasNotificationBeenShown(ItemType.GEAR, stocksTime)
+                val seedNotificationShown = hasNotificationBeenShown(ItemType.SEED, stocksTime)
+                val eggNotificationShown = hasNotificationBeenShown(ItemType.EGG, eggsTime)
+                val weatherNotificationShown = weather != null && hasNotificationBeenShown(ItemType.WEATHER, weatherTime)
+                
+                // Determine if there are actual changes in items with notifications enabled that haven't been notified yet
+                val gearChanged = hasEnabledGearItems && hasItemsChanged(gearItems, previousItems[ItemType.GEAR] ?: emptyList()) && !gearNotificationShown
+                val seedChanged = hasEnabledSeedItems && hasItemsChanged(seedItems, previousItems[ItemType.SEED] ?: emptyList()) && !seedNotificationShown
+                val eggChanged = hasEnabledEggItems && hasItemsChanged(eggItems, previousItems[ItemType.EGG] ?: emptyList()) && !eggNotificationShown
                 
                 // Update previous items after checking
                 previousItems = mapOf(
@@ -232,7 +271,11 @@ class ItemRepository private constructor(context: Context) {
                 onSeedUpdated(seedItems, seedChanged)
                 onEggUpdated(eggItems, eggChanged)
                 if (weather != null) {
-                    onWeatherUpdated(weather)
+                    // Only notify for weather if notification hasn't been shown
+                    val shouldNotifyWeather = !weatherNotificationShown
+                    if (shouldNotifyWeather) {
+                        onWeatherUpdated(weather)
+                    }
                 }
             }
             
