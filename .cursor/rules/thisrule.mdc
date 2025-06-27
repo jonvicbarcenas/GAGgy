@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# if there is version.json in my project always update the features on what is implemented
+
+- [version.json](mdc:version.json)
+
