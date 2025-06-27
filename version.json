@@ -1,5 +1,8 @@
 {
   "version": "v2.0.2",
   "url": "https://github.com/jonvicbarcenas/GAGgy/releases/tag/v2.0.2",
-  "message": "Update to version 2.0.2 with new features and bug fixes"
+  "features": [
+    "Removed redundant quantity indicator from item rows",
+    "Cleaner UI with single quantity display"
+  ]
 }
