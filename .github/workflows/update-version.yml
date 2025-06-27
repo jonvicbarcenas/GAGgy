@@ -17,7 +17,8 @@ jobs:
         run: |
           echo "{
             \"version\": \"${{ github.event.release.tag_name }}\",
-            \"url\": \"${{ github.event.release.html_url }}\"
+            \"url\": \"${{ github.event.release.html_url }}\",
+            \"message\": \"${{ github.event.release.body }}\"
           }" > version.json
 
       - name: Commit and push changes

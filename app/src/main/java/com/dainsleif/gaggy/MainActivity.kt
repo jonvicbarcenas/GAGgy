@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 val versionData by updateViewModel.versionData.collectAsState()
                 val isCheckingForUpdates by updateViewModel.isCheckingForUpdates.collectAsState()
                 val updateError by updateViewModel.error.collectAsState()
+                val updateAvailable by updateViewModel.updateAvailable.collectAsState()
                 
                 NavHost(
                     navController = navController,
@@ -98,6 +99,7 @@ class MainActivity : ComponentActivity() {
                         versionData = versionData,
                         isLoading = isCheckingForUpdates,
                         error = updateError,
+                        updateAvailable = updateAvailable,
                         onDismiss = { showUpdateDialog = false },
                         onForceUpdate = {
                             updateViewModel.forceUpdate()

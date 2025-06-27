@@ -27,6 +27,7 @@ fun UpdateDialog(
     versionData: VersionData?,
     isLoading: Boolean,
     error: String?,
+    updateAvailable: Boolean = false,
     onDismiss: () -> Unit,
     onForceUpdate: () -> Unit
 ) {
@@ -65,7 +66,7 @@ fun UpdateDialog(
                             textAlign = TextAlign.Center
                         )
                     }
-                    versionData != null -> {
+                    versionData != null && updateAvailable -> {
                         Text(
                             text = "New version available: ${versionData.version}",
                             fontWeight = FontWeight.Bold,
@@ -74,6 +75,13 @@ fun UpdateDialog(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Would you like to update now?",
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    versionData != null && !updateAvailable -> {
+                        Text(
+                            text = "You have the latest version (${versionData.version})",
+                            fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -91,7 +99,7 @@ fun UpdateDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                if (versionData != null && !isLoading) {
+                if (versionData != null && !isLoading && updateAvailable) {
                     Button(
                         onClick = onForceUpdate,
                         modifier = Modifier.padding(8.dp)

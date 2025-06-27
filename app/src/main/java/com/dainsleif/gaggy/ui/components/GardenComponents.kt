@@ -54,7 +54,6 @@ import com.dainsleif.gaggy.model.CategoryData
 import com.dainsleif.gaggy.model.EggData
 import com.dainsleif.gaggy.model.GardenData
 import com.dainsleif.gaggy.model.ItemData
-import com.dainsleif.gaggy.model.VersionData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,7 +67,6 @@ fun GardenListScreen(
     onNotificationClick: () -> Unit,
     onCheckForUpdates: () -> Unit = {}
 ) {
-    var showUpdateDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     
     Scaffold(
@@ -114,7 +112,6 @@ fun GardenListScreen(
                                 text = { Text("Check for Updates") },
                                 onClick = {
                                     showMenu = false
-                                    showUpdateDialog = true
                                     onCheckForUpdates()
                                 }
                             )
@@ -146,27 +143,6 @@ fun GardenListScreen(
             }
         }
     }
-    
-    if (showUpdateDialog) {
-        UpdateDialogWrapper(
-            onDismiss = { showUpdateDialog = false }
-        )
-    }
-}
-
-@Composable
-fun UpdateDialogWrapper(
-    onDismiss: () -> Unit
-) {
-    // This is a placeholder that will be replaced by the real implementation
-    // when we integrate with the MainActivity
-    UpdateDialog(
-        versionData = VersionData("v1.1.2", "https://github.com/jonvicbarcenas/GAGgy/releases/tag/v1.1.2"),
-        isLoading = false,
-        error = null,
-        onDismiss = onDismiss,
-        onForceUpdate = { /* Will be implemented in MainActivity */ }
-    )
 }
 
 @Composable
