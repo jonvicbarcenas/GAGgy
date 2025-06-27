@@ -1,6 +1,8 @@
 package com.dainsleif.gaggy.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,14 +10,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,11 +46,24 @@ fun UpdateDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { 
-            Text(
-                text = "App Update",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Update",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "App Update",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         },
         text = {
             Column(
@@ -67,23 +92,144 @@ fun UpdateDialog(
                         )
                     }
                     versionData != null && updateAvailable -> {
-                        Text(
-                            text = "New version available: ${versionData.version}",
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            elevation = CardDefaults.cardElevation(4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "New version available!",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                
+                                Box(
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                                                )
+                                            )
+                                        )
+                                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = versionData.version,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Display features if available
+                        if (versionData.features.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "What's New:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp),
+                                textAlign = TextAlign.Start
+                            )
+                            
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 8.dp, end = 8.dp)
+                            ) {
+                                versionData.features.forEach { feature ->
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        )
+                                        Text(
+                                            text = feature,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Would you like to update now?",
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            fontSize = 15.sp
                         )
                     }
                     versionData != null && !updateAvailable -> {
-                        Text(
-                            text = "You have the latest version (${versionData.version})",
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            elevation = CardDefaults.cardElevation(4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "You have the latest version",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                
+                                Box(
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(
+                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
+                                                )
+                                            )
+                                        )
+                                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = versionData.version,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSecondary
+                                    )
+                                }
+                            }
+                        }
                     }
                     else -> {
                         Text(
@@ -102,9 +248,12 @@ fun UpdateDialog(
                 if (versionData != null && !isLoading && updateAvailable) {
                     Button(
                         onClick = onForceUpdate,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
                     ) {
-                        Text("Update")
+                        Text("Update Now")
                     }
                     
                     Spacer(modifier = Modifier.width(8.dp))
@@ -112,11 +261,23 @@ fun UpdateDialog(
                 
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (versionData != null && !isLoading && updateAvailable) 
+                            MaterialTheme.colorScheme.surfaceVariant
+                        else 
+                            MaterialTheme.colorScheme.primary
+                    )
                 ) {
-                    Text("Dismiss")
+                    Text(
+                        "Dismiss", 
+                        color = if (versionData != null && !isLoading && updateAvailable)
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        else
+                            MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
         }
     )
-} 
+}

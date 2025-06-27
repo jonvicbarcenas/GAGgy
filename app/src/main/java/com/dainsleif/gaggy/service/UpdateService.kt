@@ -18,9 +18,21 @@ class UpdateService {
                 try {
                     val response = URL(VERSION_URL).readText()
                     val jsonObject = JSONObject(response)
+                    
+                    // Parse features array if it exists
+                    val featuresArray = jsonObject.optJSONArray("features")
+                    val features = mutableListOf<String>()
+                    
+                    if (featuresArray != null) {
+                        for (i in 0 until featuresArray.length()) {
+                            features.add(featuresArray.getString(i))
+                        }
+                    }
+                    
                     val versionData = VersionData(
                         version = jsonObject.getString("version"),
-                        url = jsonObject.getString("url")
+                        url = jsonObject.getString("url"),
+                        features = features
                     )
                     Result.success(versionData)
                 } catch (e: Exception) {
