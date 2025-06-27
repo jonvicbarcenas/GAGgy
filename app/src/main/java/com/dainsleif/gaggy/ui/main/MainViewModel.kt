@@ -132,7 +132,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun updateLastUpdated(stocksTime: String, eggsTime: String) {
         _lastUpdated.value = Pair(stocksTime, eggsTime)
-        itemRepository.updateCurrentLastUpdated(stocksTime, eggsTime)
     }
     
     /**
@@ -140,10 +139,5 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun updateWeatherLastUpdated(weatherTime: String) {
         _weatherLastUpdated.value = weatherTime
-        itemRepository.updateCurrentLastUpdated(
-            _lastUpdated.value?.first ?: "",
-            _lastUpdated.value?.second ?: "",
-            weatherTime
-        )
     }
 } 

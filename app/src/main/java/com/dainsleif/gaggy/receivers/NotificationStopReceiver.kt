@@ -1,5 +1,6 @@
 package com.dainsleif.gaggy.receivers
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -51,19 +52,38 @@ class NotificationStopReceiver : BroadcastReceiver() {
                 }
             }
             
-            // Use the NotificationHelper singleton to stop the notification
-            val notificationHelper = NotificationHelper.getInstance(context)
+            // Use multiple approaches to ensure the notification is cleared
             
-            // First try to stop all notifications as a failsafe
+            // 1. Use the NotificationHelper singleton to stop the notification
+            val notificationHelper = NotificationHelper.getInstance(context)
             notificationHelper.stopAllNotifications()
             
-            if (notificationId != -1) {
-                // Then specifically stop this notification
-                notificationHelper.stopNotification(notificationId)
-                Log.d(TAG, "Notification stopped: $notificationId for item: $itemName")
-            } else {
-                Log.d(TAG, "Invalid notification ID, stopping all notifications")
+            // 2. Get the NotificationManager directly and cancel notifications
+            try {
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                
+                if (notificationId != -1) {
+                    // Cancel the specific notification
+                    notificationManager.cancel(notificationId)
+                    Log.d(TAG, "Direct notification cancellation: ID=$notificationId")
+                }
+                
+                // Also cancel all notifications as a failsafe
+                notificationManager.cancelAll()
+                Log.d(TAG, "All notifications cancelled")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cancelling notifications directly: ${e.message}")
             }
+            
+            // 3. Use the NotificationHelper with a delay to ensure UI is updated
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (notificationId != -1) {
+                    notificationHelper.stopNotification(notificationId)
+                    Log.d(TAG, "Notification stopped with delay: $notificationId")
+                }
+            }, 200)
+            
+            Log.d(TAG, "Notification stop process completed for ID=$notificationId, name=$itemName")
         }
     }
     

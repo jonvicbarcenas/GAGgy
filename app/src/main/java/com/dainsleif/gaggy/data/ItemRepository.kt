@@ -16,7 +16,7 @@ import kotlinx.coroutines.tasks.await
  * Repository class to handle all data operations related to items
  */
 class ItemRepository private constructor(context: Context) {
-    private val database = FirebaseDatabase.getInstance().reference.child("discord_data")
+    private val database = FirebaseDatabase.getInstance().reference.child("datas")
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("Notifications", Context.MODE_PRIVATE)
     private val lastUpdatedPrefs: SharedPreferences = context.getSharedPreferences("LastUpdated", Context.MODE_PRIVATE)
     private val notificationStatePrefs: SharedPreferences = context.getSharedPreferences("NotificationState", Context.MODE_PRIVATE)
@@ -170,13 +170,27 @@ class ItemRepository private constructor(context: Context) {
     /**
      * Update current last updated times
      */
-    fun updateCurrentLastUpdated(stocksTime: String, eggsTime: String, weatherTime: String = "") {
+    fun updateCurrentLastUpdated(stocksTimestamp: Long, eggsTimestamp: Long, weatherTimestamp: Long = 0) {
+        val stocksTime = timestampToFormattedDate(stocksTimestamp)
+        val eggsTime = timestampToFormattedDate(eggsTimestamp)
+        val weatherTime = if (weatherTimestamp > 0) timestampToFormattedDate(weatherTimestamp) else ""
+        
         currentLastUpdated = mapOf(
             ItemType.GEAR to stocksTime,
             ItemType.SEED to stocksTime,
             ItemType.EGG to eggsTime,
             ItemType.WEATHER to weatherTime
         )
+    }
+    
+    /**
+     * Convert timestamp to formatted date string
+     */
+    private fun timestampToFormattedDate(timestamp: Long): String {
+        if (timestamp <= 0) return ""
+        val date = java.util.Date(timestamp)
+        val formatter = java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss a", java.util.Locale.getDefault())
+        return formatter.format(date)
     }
     
     /**
@@ -233,12 +247,13 @@ class ItemRepository private constructor(context: Context) {
                 val weather = processWeather(snapshot)
                 
                 // Get the timestamp data
-                val stocksTime = snapshot.child("last_updated").child("stocks").child("ph").getValue(String::class.java) ?: ""
-                val eggsTime = snapshot.child("last_updated").child("eggs").child("ph").getValue(String::class.java) ?: ""
-                val weatherTime = snapshot.child("last_updated").child("weather").child("ph").getValue(String::class.java) ?: ""
+                val stocksTimestamp = snapshot.child("stocks").child("gear").child("updatedAt").getValue(Long::class.java) ?: 0L
+                val eggsTimestamp = snapshot.child("eggs").child("updatedAt").getValue(Long::class.java) ?: 0L
+                // Weather is not in the new structure, use 0 as default
+                val weatherTimestamp = 0L
                 
                 // Update current timestamps
-                updateCurrentLastUpdated(stocksTime, eggsTime, weatherTime)
+                updateCurrentLastUpdated(stocksTimestamp, eggsTimestamp, weatherTimestamp)
                 
                 // Check for any items with enabled notifications
                 val hasEnabledGearItems = gearItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
@@ -246,10 +261,10 @@ class ItemRepository private constructor(context: Context) {
                 val hasEnabledEggItems = eggItems.any { isNotificationEnabled(it.name) && it.quantity > 0 }
                 
                 // Check if notifications have already been shown for these timestamps
-                val gearNotificationShown = hasNotificationBeenShown(ItemType.GEAR, stocksTime)
-                val seedNotificationShown = hasNotificationBeenShown(ItemType.SEED, stocksTime)
-                val eggNotificationShown = hasNotificationBeenShown(ItemType.EGG, eggsTime)
-                val weatherNotificationShown = weather != null && hasNotificationBeenShown(ItemType.WEATHER, weatherTime)
+                val gearNotificationShown = hasNotificationBeenShown(ItemType.GEAR, stocksTimestamp.toString())
+                val seedNotificationShown = hasNotificationBeenShown(ItemType.SEED, stocksTimestamp.toString())
+                val eggNotificationShown = hasNotificationBeenShown(ItemType.EGG, eggsTimestamp.toString())
+                val weatherNotificationShown = weather != null && hasNotificationBeenShown(ItemType.WEATHER, weatherTimestamp.toString())
                 
                 // Determine if there are actual changes in items with notifications enabled that haven't been notified yet
                 val gearChanged = hasEnabledGearItems && hasItemsChanged(gearItems, previousItems[ItemType.GEAR] ?: emptyList()) && !gearNotificationShown
@@ -318,7 +333,7 @@ class ItemRepository private constructor(context: Context) {
     private fun processGearStock(snapshot: DataSnapshot): List<Item> {
         try {
             val gearItems = mutableListOf<Item>()
-            val gearSnapshot = snapshot.child("stocks").child("GEAR STOCK")
+            val gearSnapshot = snapshot.child("stocks").child("gear").child("items")
             
             gearSnapshot.children.forEach { itemSnapshot ->
                 val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
@@ -337,7 +352,7 @@ class ItemRepository private constructor(context: Context) {
     private fun processSeedStock(snapshot: DataSnapshot): List<Item> {
         try {
             val seedItems = mutableListOf<Item>()
-            val seedSnapshot = snapshot.child("stocks").child("SEEDS STOCK")
+            val seedSnapshot = snapshot.child("stocks").child("seeds").child("items")
             
             seedSnapshot.children.forEach { itemSnapshot ->
                 val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
@@ -356,7 +371,7 @@ class ItemRepository private constructor(context: Context) {
     private fun processEggStock(snapshot: DataSnapshot): List<Item> {
         try {
             val eggItems = mutableListOf<Item>()
-            val eggSnapshot = snapshot.child("eggs").child("EGG STOCK")
+            val eggSnapshot = snapshot.child("eggs").child("items")
             
             eggSnapshot.children.forEach { itemSnapshot ->
                 val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
@@ -374,64 +389,20 @@ class ItemRepository private constructor(context: Context) {
     
     /**
      * Process weather data from Firebase
+     * Note: Weather is not present in the new structure, this will return null
      */
     private fun processWeather(snapshot: DataSnapshot): Weather? {
-        try {
-            val weatherSnapshot = snapshot.child("weather").child("WEATHER")
-            
-            var title = ""
-            var description = ""
-            
-            weatherSnapshot.children.forEach { weatherItem ->
-                val name = weatherItem.child("name").getValue(String::class.java) ?: ""
-                val value = weatherItem.child("value").getValue(String::class.java) ?: ""
-                
-                when (name) {
-                    "title" -> title = value
-                    "description" -> description = value
-                }
-            }
-            
-            return if (title.isNotEmpty() && description.isNotEmpty()) {
-                Weather(title, description)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing weather: ${e.message}")
-            return null
-        }
+        // Weather is not in the new structure
+        return null
     }
     
     /**
      * Get current weather information
+     * Note: Weather is not present in the new structure, this will return null
      */
     suspend fun getWeather(): Weather? {
-        try {
-            val weatherSnapshot = database.child("weather").child("WEATHER").get().await()
-            
-            var title = ""
-            var description = ""
-            
-            weatherSnapshot.children.forEach { weatherItem ->
-                val name = weatherItem.child("name").getValue(String::class.java) ?: ""
-                val value = weatherItem.child("value").getValue(String::class.java) ?: ""
-                
-                when (name) {
-                    "title" -> title = value
-                    "description" -> description = value
-                }
-            }
-            
-            return if (title.isNotEmpty() && description.isNotEmpty()) {
-                Weather(title, description)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting weather: ${e.message}")
-            return null
-        }
+        // Weather is not in the new structure
+        return null
     }
     
     /**
@@ -447,7 +418,7 @@ class ItemRepository private constructor(context: Context) {
     suspend fun getGearItems(): List<Item> {
         val items = mutableListOf<Item>()
         try {
-            val dataSnapshot = database.child("stocks").child("GEAR STOCK").get().await()
+            val dataSnapshot = database.child("stocks").child("gear").child("items").get().await()
             
             dataSnapshot.children.forEach { itemSnapshot ->
                 val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
@@ -468,7 +439,7 @@ class ItemRepository private constructor(context: Context) {
     suspend fun getSeedItems(): List<Item> {
         val items = mutableListOf<Item>()
         try {
-            val dataSnapshot = database.child("stocks").child("SEEDS STOCK").get().await()
+            val dataSnapshot = database.child("stocks").child("seeds").child("items").get().await()
             
             dataSnapshot.children.forEach { itemSnapshot ->
                 val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""
@@ -489,7 +460,7 @@ class ItemRepository private constructor(context: Context) {
     suspend fun getEggItems(): List<Item> {
         val items = mutableListOf<Item>()
         try {
-            val dataSnapshot = database.child("eggs").child("EGG STOCK").get().await()
+            val dataSnapshot = database.child("eggs").child("items").get().await()
             
             dataSnapshot.children.forEach { itemSnapshot ->
                 val name = itemSnapshot.child("name").getValue(String::class.java) ?: ""

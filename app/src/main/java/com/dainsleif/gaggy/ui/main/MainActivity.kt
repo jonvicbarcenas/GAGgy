@@ -207,21 +207,35 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun listenForLastUpdatedTimes() {
-        val database = FirebaseDatabase.getInstance().reference.child("discord_data").child("last_updated")
+        val database = FirebaseDatabase.getInstance().reference.child("datas")
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val stocksTime = snapshot.child("stocks").child("ph").getValue(String::class.java) ?: ""
-                val eggsTime = snapshot.child("eggs").child("ph").getValue(String::class.java) ?: ""
-                val weatherTime = snapshot.child("weather").child("ph").getValue(String::class.java) ?: ""
+                val stocksTimestamp = snapshot.child("stocks").child("gear").child("updatedAt").getValue(Long::class.java) ?: 0L
+                val eggsTimestamp = snapshot.child("eggs").child("updatedAt").getValue(Long::class.java) ?: 0L
+                
+                // Convert timestamps to formatted dates
+                val stocksTime = timestampToFormattedDate(stocksTimestamp)
+                val eggsTime = timestampToFormattedDate(eggsTimestamp)
                 
                 viewModel.updateLastUpdated(stocksTime, eggsTime)
-                viewModel.updateWeatherLastUpdated(weatherTime)
+                // Weather is no longer available in the new structure
+                viewModel.updateWeatherLastUpdated("")
             }
             
             override fun onCancelled(error: DatabaseError) {
                 // Handle database error
             }
         })
+    }
+    
+    /**
+     * Convert timestamp to formatted date string
+     */
+    private fun timestampToFormattedDate(timestamp: Long): String {
+        if (timestamp <= 0) return ""
+        val date = java.util.Date(timestamp)
+        val formatter = java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss a", java.util.Locale.getDefault())
+        return formatter.format(date)
     }
     
     private fun requestPermissions() {

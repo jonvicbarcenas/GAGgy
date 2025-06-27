@@ -117,9 +117,25 @@ class MediaManager private constructor(private val context: Context) {
     fun stopAllMedia() {
         Log.d(TAG, "Stopping all media")
         try {
+            // Stop everything in sequence
             stopMediaPlayer()
             stopVibration()
             stopSystemSounds()
+            
+            // Force release MediaPlayer completely
+            synchronized(Companion) {
+                mediaPlayer?.apply {
+                    try {
+                        if (isPlaying) stop()
+                        reset()
+                        release()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error during force MediaPlayer cleanup: ${e.message}")
+                    }
+                }
+                mediaPlayer = null
+            }
+            
             Log.d(TAG, "All media stopped successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping all media: ${e.message}")

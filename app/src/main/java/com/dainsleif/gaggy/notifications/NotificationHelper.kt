@@ -296,6 +296,12 @@ class NotificationHelper private constructor(private val context: Context) {
                 Log.d(TAG, "Canceled notification with ID: $it")
             }
             
+            // Cancel known batch notification IDs explicitly
+            notificationManager.cancel(GEAR_BATCH_NOTIFICATION_ID)
+            notificationManager.cancel(SEED_BATCH_NOTIFICATION_ID)
+            notificationManager.cancel(EGG_BATCH_NOTIFICATION_ID)
+            notificationManager.cancel(WEATHER_BATCH_NOTIFICATION_ID)
+            
             // Cancel all notifications as a failsafe
             notificationManager.cancelAll()
             
@@ -306,6 +312,14 @@ class NotificationHelper private constructor(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping all notifications: ${e.message}")
             e.printStackTrace()
+            
+            // Try direct approach if the above fails
+            try {
+                notificationManager.cancelAll()
+                Log.d(TAG, "Canceled all notifications via fallback")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Final fallback failed: ${e2.message}")
+            }
         }
     }
     
