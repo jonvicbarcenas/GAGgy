@@ -20,6 +20,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dainsleif.gaggy.ui.components.GardenListScreen
 import com.dainsleif.gaggy.ui.components.UpdateDialog
+import com.dainsleif.gaggy.ui.screens.AboutScreen
 import com.dainsleif.gaggy.ui.screens.ListToggleScreen
 import com.dainsleif.gaggy.ui.theme.GardenAppTheme
 import com.dainsleif.gaggy.viewmodel.GardenViewModel
@@ -80,12 +81,23 @@ class MainActivity : ComponentActivity() {
                             onCheckForUpdates = {
                                 showUpdateDialog = true
                                 updateViewModel.checkForUpdates()
+                            },
+                            onAboutClick = {
+                                navController.navigate("about")
                             }
                         )
                     }
                     
                     composable("notifications") {
                         ListToggleScreen(
+                            onBackPressed = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                    
+                    composable("about") {
+                        AboutScreen(
                             onBackPressed = {
                                 navController.popBackStack()
                             }

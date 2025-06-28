@@ -65,7 +65,8 @@ fun GardenListScreen(
     isLoading: Boolean,
     error: String?,
     onNotificationClick: () -> Unit,
-    onCheckForUpdates: () -> Unit = {}
+    onCheckForUpdates: () -> Unit = {},
+    onAboutClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     
@@ -74,7 +75,7 @@ fun GardenListScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = "Grow A Garden List",
+                        text = "gaggy",
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -113,6 +114,14 @@ fun GardenListScreen(
                                 onClick = {
                                     showMenu = false
                                     onCheckForUpdates()
+                                }
+                            )
+                            
+                            DropdownMenuItem(
+                                text = { Text("About") },
+                                onClick = {
+                                    showMenu = false
+                                    onAboutClick()
                                 }
                             )
                         }
@@ -272,7 +281,7 @@ fun GardenHeader() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Grow A Garden List",
+            text = "GAG Stocks",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,

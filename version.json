@@ -4,6 +4,8 @@
   "features": [
   "Removed redundant quantity indicator from item rows + v2.0.5",
   "Cleaner UI with single quantity display + v2.0.5",
-  "Added gear notifications for garden tools and equipment + v2.0.6"
+  "Added gear notifications for garden tools and equipment + v2.0.6",
+  "Added About screen accessible from menu dropdown + v2.0.6",
+  "Detailed About screen with app information and features + v2.0.6"
 ]
 }
