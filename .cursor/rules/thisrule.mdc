@@ -4,7 +4,14 @@ globs:
 alwaysApply: true
 ---
 
-# if there is version.json in my project always update the features on what is implemented
+If a [version.json](mdc:version.json) file exists in the project, always update the list of implemented features to reflect any changes. After each feature description, append its associated version using the format:
+
+Feature description,
+
+where for example v1.0.0 is the original version and + 0.0.1 indicates the incremental update.
+-another example is "Cleaner UI with single quantity display + v2.0.5"
+
+The version information should be fetched from [build.gradle.kts](mdc:app/build.gradle.kts) at the android.versionName and then add incremental update
 
 - [version.json](mdc:version.json)
 

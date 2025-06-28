@@ -31,6 +31,7 @@ class NotificationSoundService(private val context: Context) {
 
     private val PREFS_NAME = "GardenEggPrefs"
     private val PREF_PREFIX_EGG = "egg_"
+    private val PREF_PREFIX_GEAR = "gear_"
     private val PREF_PREFIX_SETTING = "setting_"
     
     private val NOTIFICATION_CHANNEL_ID = "garden_eggs_channel"
@@ -41,6 +42,7 @@ class NotificationSoundService(private val context: Context) {
     
     private var mediaPlayer: MediaPlayer? = null
     private var previousEggData: Map<String, List<ItemData>> = mapOf()
+    private var previousGearData: Map<String, List<ItemData>> = mapOf()
     private var firebaseListener: ValueEventListener? = null
     
     init {
@@ -116,53 +118,111 @@ class NotificationSoundService(private val context: Context) {
             currentEggs["Rare Summer Egg"] = eggData.items.filter { it.name == "Rare Summer Egg" }
         }
         
-        // Check if this is the first data load
+        // Process gear
+        val currentGear = mutableMapOf<String, List<ItemData>>()
+        val newGear = mutableListOf<String>()
+        
+        // Add gear items if available
+        gardenData.datas.stocks?.gear?.let { gearData ->
+            currentGear["Watering Can"] = gearData.items.filter { it.name == "Watering Can" }
+            currentGear["Trowel"] = gearData.items.filter { it.name == "Trowel" }
+            currentGear["Favorite Tool"] = gearData.items.filter { it.name == "Favorite Tool" }
+            currentGear["Basic Sprinkler"] = gearData.items.filter { it.name == "Basic Sprinkler" }
+            currentGear["Godly Sprinkler"] = gearData.items.filter { it.name == "Godly Sprinkler" }
+            currentGear["Advanced Sprinkler"] = gearData.items.filter { it.name == "Advanced Sprinkler" }
+            currentGear["Master Sprinkler"] = gearData.items.filter { it.name == "Master Sprinkler" }
+            currentGear["Lightning Rod"] = gearData.items.filter { it.name == "Lightning Rod" }
+            currentGear["Recall Wrench"] = gearData.items.filter { it.name == "Recall Wrench" }
+            currentGear["Harvest Tool"] = gearData.items.filter { it.name == "Harvest Tool" }
+            currentGear["Friendship Pot"] = gearData.items.filter { it.name == "Friendship Pot" }
+            currentGear["Cleaning Spray"] = gearData.items.filter { it.name == "Cleaning Spray" }
+            currentGear["Tanning Mirror"] = gearData.items.filter { it.name == "Tanning Mirror" }
+        }
+        
+        // Check if this is the first data load for eggs
         if (previousEggData.isEmpty()) {
             previousEggData = currentEggs
-            return
-        }
-        
-        // Check for changes in egg quantities
-        var shouldPlaySound = false
-        var shouldVibrate = false
-        
-        for ((eggName, items) in currentEggs) {
-            val prefKey = PREF_PREFIX_EGG + eggName.replace(" ", "_").lowercase()
-            val isEggEnabled = sharedPrefs.getBoolean(prefKey, false)
-            
-            if (isEggEnabled) {
-                val previousItems = previousEggData[eggName] ?: emptyList()
-                val previousCount = previousItems.sumOf { it.quantity }
-                val currentCount = items.sumOf { it.quantity }
+        } else {
+            // Check for changes in egg quantities
+            for ((eggName, items) in currentEggs) {
+                val prefKey = PREF_PREFIX_EGG + eggName.replace(" ", "_").lowercase()
+                val isEggEnabled = sharedPrefs.getBoolean(prefKey, false)
                 
-                if (currentCount > previousCount) {
-                    // We have new eggs of this type
-                    shouldPlaySound = true
-                    shouldVibrate = true
-                    val newCount = currentCount - previousCount
-                    newEggs.add("$newCount $eggName")
+                if (isEggEnabled) {
+                    val previousItems = previousEggData[eggName] ?: emptyList()
+                    val previousCount = previousItems.sumOf { it.quantity }
+                    val currentCount = items.sumOf { it.quantity }
+                    
+                    if (currentCount > previousCount) {
+                        // We have new eggs of this type
+                        val newCount = currentCount - previousCount
+                        newEggs.add("$newCount $eggName")
+                    }
                 }
             }
+            
+            // Update previous egg data
+            previousEggData = currentEggs
         }
         
-        // Update previous data
-        previousEggData = currentEggs
-        
-        // Show notification and play sound if needed
-        if (newEggs.isNotEmpty()) {
-            showNotification(newEggs, vibrationEnabled)
+        // Check if this is the first data load for gear
+        if (previousGearData.isEmpty()) {
+            previousGearData = currentGear
+        } else {
+            // Check for changes in gear quantities
+            for ((gearName, items) in currentGear) {
+                val prefKey = PREF_PREFIX_GEAR + gearName.replace(" ", "_").lowercase()
+                val isGearEnabled = sharedPrefs.getBoolean(prefKey, false)
+                
+                if (isGearEnabled) {
+                    val previousItems = previousGearData[gearName] ?: emptyList()
+                    val previousCount = previousItems.sumOf { it.quantity }
+                    val currentCount = items.sumOf { it.quantity }
+                    
+                    if (currentCount > previousCount) {
+                        // We have new gear of this type
+                        val newCount = currentCount - previousCount
+                        newGear.add("$newCount $gearName")
+                    }
+                }
+            }
             
-            if (shouldPlaySound && soundEnabled) {
+            // Update previous gear data
+            previousGearData = currentGear
+        }
+        
+        // Determine if we need to notify
+        val shouldPlaySound = newEggs.isNotEmpty() || newGear.isNotEmpty()
+        val shouldVibrate = shouldPlaySound
+        
+        // Show notification for eggs if needed
+        if (newEggs.isNotEmpty()) {
+            showNotification(newEggs, "New Eggs Available", vibrationEnabled)
+            
+            if (soundEnabled) {
                 playUrgentSound()
             }
             
-            if (shouldVibrate && vibrationEnabled) {
+            if (vibrationEnabled) {
+                vibrate()
+            }
+        }
+        
+        // Show notification for gear if needed
+        if (newGear.isNotEmpty()) {
+            showNotification(newGear, "New Gear Available", vibrationEnabled)
+            
+            if (soundEnabled && newEggs.isEmpty()) { // Only play sound once if both eggs and gear have updates
+                playUrgentSound()
+            }
+            
+            if (vibrationEnabled && newEggs.isEmpty()) { // Only vibrate once if both eggs and gear have updates
                 vibrate()
             }
         }
     }
     
-    private fun showNotification(newEggs: List<String>, vibrationEnabled: Boolean) {
+    private fun showNotification(items: List<String>, title: String, vibrationEnabled: Boolean) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -172,15 +232,15 @@ class NotificationSoundService(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        val contentText = if (newEggs.size == 1) {
-            "New ${newEggs.first()} available!"
+        val contentText = if (items.size == 1) {
+            "New ${items.first()} available!"
         } else {
-            "New eggs available: ${newEggs.joinToString(", ")}"
+            "New items available: ${items.joinToString(", ")}"
         }
         
         val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Garden Eggs Update")
+            .setContentTitle(title)
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)

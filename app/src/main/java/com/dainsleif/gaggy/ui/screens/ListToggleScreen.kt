@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.sp
 // Constant for SharedPreferences
 private const val PREFS_NAME = "GardenEggPrefs"
 private const val PREF_PREFIX_EGG = "egg_"
+private const val PREF_PREFIX_GEAR = "gear_"
 private const val PREF_PREFIX_SETTING = "setting_"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,7 +118,30 @@ fun ListToggleScreen(onBackPressed: () -> Unit) {
             Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(16.dp))
 
-
+            // Gear Notifications Section
+            Text(
+                text = "Gear Notifications",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Gear items
+            GearToggleItem(name = "Watering Can", context = context)
+            GearToggleItem(name = "Trowel", context = context)
+            GearToggleItem(name = "Favorite Tool", context = context)
+            GearToggleItem(name = "Basic Sprinkler", context = context)
+            GearToggleItem(name = "Godly Sprinkler", context = context)
+            GearToggleItem(name = "Advanced Sprinkler", context = context)
+            GearToggleItem(name = "Master Sprinkler", context = context)
+            GearToggleItem(name = "Lightning Rod", context = context)
+            GearToggleItem(name = "Recall Wrench", context = context)
+            GearToggleItem(name = "Harvest Tool", context = context)
+            GearToggleItem(name = "Friendship Pot", context = context)
+            GearToggleItem(name = "Cleaning Spray", context = context)
+            GearToggleItem(name = "Tanning Mirror", context = context)
         }
     }
 }
@@ -175,12 +198,12 @@ fun EggToggleItem(name: String, context: Context) {
 }
 
 @Composable
-fun SettingsToggleItem(name: String, description: String, context: Context) {
-    val prefKey = PREF_PREFIX_SETTING + name.replace(" ", "_").lowercase()
+fun GearToggleItem(name: String, context: Context) {
+    val prefKey = PREF_PREFIX_GEAR + name.replace(" ", "_").lowercase()
     val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     
-    // Load saved preference or default to true for settings
-    var isEnabled by remember { mutableStateOf(sharedPrefs.getBoolean(prefKey, true)) }
+    // Load saved preference or default to false
+    var isEnabled by remember { mutableStateOf(sharedPrefs.getBoolean(prefKey, false)) }
     
     // Save preference when toggle changes
     DisposableEffect(isEnabled) {
@@ -201,25 +224,17 @@ fun SettingsToggleItem(name: String, description: String, context: Context) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Text(
-                    text = description,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
+            Text(
+                text = name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.weight(1f))
             
             Switch(
                 checked = isEnabled,
@@ -231,4 +246,4 @@ fun SettingsToggleItem(name: String, description: String, context: Context) {
             )
         }
     }
-} 
+}
