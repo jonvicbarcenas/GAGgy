@@ -6,7 +6,8 @@ data class GardenData(
 
 data class DataContainer(
     val eggs: EggData? = null,
-    val stocks: StocksData? = null
+    val stocks: StocksData? = null,
+    val eventStocks: CategoryData? = null
 )
 
 data class EggData(

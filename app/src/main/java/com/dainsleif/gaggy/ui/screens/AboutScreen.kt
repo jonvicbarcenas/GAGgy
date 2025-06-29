@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,8 +73,9 @@ fun AboutScreen(onBackPressed: () -> Unit) {
             verticalArrangement = Arrangement.Top
         ) {
             // App Logo
+            val appLogo: Painter = painterResource(id = R.drawable.ic_launcher_foreground)
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                painter = appLogo,
                 contentDescription = "App Logo",
                 modifier = Modifier
                     .size(120.dp)
@@ -181,7 +183,22 @@ fun AboutScreen(onBackPressed: () -> Unit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "© 2023-2024 Dainsleif",
+                        text = "© 2025-2026 Dainsleif",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Partnered with:",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = "© Rain Lee",
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )

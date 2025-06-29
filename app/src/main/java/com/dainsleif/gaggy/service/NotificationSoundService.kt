@@ -4,8 +4,10 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.os.Build
@@ -33,6 +35,7 @@ class NotificationSoundService(private val context: Context) {
     private val PREF_PREFIX_EGG = "egg_"
     private val PREF_PREFIX_GEAR = "gear_"
     private val PREF_PREFIX_SETTING = "setting_"
+    private val PREF_PREFIX_EVENT = "event_"
     
     private val NOTIFICATION_CHANNEL_ID = "garden_eggs_channel"
     private val NOTIFICATION_ID = 1001
@@ -43,11 +46,24 @@ class NotificationSoundService(private val context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private var previousEggData: Map<String, List<ItemData>> = mapOf()
     private var previousGearData: Map<String, List<ItemData>> = mapOf()
+    private var previousEventData: Map<String, List<ItemData>> = mapOf()
     private var firebaseListener: ValueEventListener? = null
+    
+    // Action for stop button
+    private val ACTION_STOP_SOUND = "com.dainsleif.gaggy.STOP_SOUND"
+    private val stopSoundReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_STOP_SOUND) {
+                stopSoundAndVibration()
+            }
+        }
+    }
     
     init {
         createNotificationChannel()
         setupFirebaseListener()
+        // Register the broadcast receiver
+        context.registerReceiver(stopSoundReceiver, IntentFilter(ACTION_STOP_SOUND))
     }
     
     private fun createNotificationChannel() {
@@ -112,6 +128,7 @@ class NotificationSoundService(private val context: Context) {
             currentEggs["Uncommon Egg"] = eggData.items.filter { it.name == "Uncommon Egg" }
             currentEggs["Legendary Egg"] = eggData.items.filter { it.name == "Legendary Egg" }
             currentEggs["Bug Egg"] = eggData.items.filter { it.name == "Bug Egg" }
+            currentEggs["Bee Egg"] = eggData.items.filter { it.name == "Bee Egg" }
             currentEggs["Mythical Egg"] = eggData.items.filter { it.name == "Mythical Egg" }
             currentEggs["Paradise Egg"] = eggData.items.filter { it.name == "Paradise Egg" }
             currentEggs["Common Summer Egg"] = eggData.items.filter { it.name == "Common Summer Egg" }
@@ -131,12 +148,29 @@ class NotificationSoundService(private val context: Context) {
             currentGear["Godly Sprinkler"] = gearData.items.filter { it.name == "Godly Sprinkler" }
             currentGear["Advanced Sprinkler"] = gearData.items.filter { it.name == "Advanced Sprinkler" }
             currentGear["Master Sprinkler"] = gearData.items.filter { it.name == "Master Sprinkler" }
-            currentGear["Lightning Rod"] = gearData.items.filter { it.name == "Lightning Rod" }
+            currentGear["Magnifying Glass"] = gearData.items.filter { it.name == "Magnifying Glass" }
             currentGear["Recall Wrench"] = gearData.items.filter { it.name == "Recall Wrench" }
             currentGear["Harvest Tool"] = gearData.items.filter { it.name == "Harvest Tool" }
             currentGear["Friendship Pot"] = gearData.items.filter { it.name == "Friendship Pot" }
             currentGear["Cleaning Spray"] = gearData.items.filter { it.name == "Cleaning Spray" }
             currentGear["Tanning Mirror"] = gearData.items.filter { it.name == "Tanning Mirror" }
+        }
+        
+        // Process event stocks
+        val currentEventStocks = mutableMapOf<String, List<ItemData>>()
+        val newEventStocks = mutableListOf<String>()
+        
+        // Add event stock items if available
+        gardenData.datas.eventStocks?.let { eventData ->
+            // Explicitly track specific event items
+            currentEventStocks["Delphinium"] = eventData.items.filter { it.name == "Delphinium" }
+            currentEventStocks["Lily of the Valley"] = eventData.items.filter { it.name == "Lily of the Valley" }
+            currentEventStocks["Traveler's Fruit"] = eventData.items.filter { it.name == "Traveler's Fruit" }
+            currentEventStocks["Oasis Egg"] = eventData.items.filter { it.name == "Oasis Egg" }
+            currentEventStocks["Summer Seed Pack"] = eventData.items.filter { it.name == "Summer Seed Pack" }
+            currentEventStocks["Oasis Crate"] = eventData.items.filter { it.name == "Oasis Crate" }
+            currentEventStocks["Mutation Spray Burnt"] = eventData.items.filter { it.name == "Mutation Spray Burnt" }
+            currentEventStocks["Hamster"] = eventData.items.filter { it.name == "Hamster" }
         }
         
         // Check if this is the first data load for eggs
@@ -191,19 +225,39 @@ class NotificationSoundService(private val context: Context) {
             previousGearData = currentGear
         }
         
-        // Determine if we need to notify
-        val shouldPlaySound = newEggs.isNotEmpty() || newGear.isNotEmpty()
-        val shouldVibrate = shouldPlaySound
+        // Check if this is the first data load for event stocks
+        if (previousEventData.isEmpty()) {
+            previousEventData = currentEventStocks
+        } else {
+            // Check for changes in event stock quantities
+            for ((eventItemName, items) in currentEventStocks) {
+                val prefKey = PREF_PREFIX_EVENT + eventItemName.replace(" ", "_").lowercase()
+                val isEventItemEnabled = sharedPrefs.getBoolean(prefKey, false)
+                
+                if (isEventItemEnabled) {
+                    val previousItems = previousEventData[eventItemName] ?: emptyList()
+                    val previousCount = previousItems.sumOf { it.quantity }
+                    val currentCount = items.sumOf { it.quantity }
+                    
+                    if (currentCount > previousCount) {
+                        // We have new event items of this type
+                        val newCount = currentCount - previousCount
+                        newEventStocks.add("$newCount $eventItemName")
+                    }
+                }
+            }
+            
+            // Update previous event data
+            previousEventData = currentEventStocks
+        }
+
         
         // Show notification for eggs if needed
         if (newEggs.isNotEmpty()) {
             showNotification(newEggs, "New Eggs Available", vibrationEnabled)
             
-            if (soundEnabled) {
+            if (soundEnabled || vibrationEnabled) {
                 playUrgentSound()
-            }
-            
-            if (vibrationEnabled) {
                 vibrate()
             }
         }
@@ -211,14 +265,21 @@ class NotificationSoundService(private val context: Context) {
         // Show notification for gear if needed
         if (newGear.isNotEmpty()) {
             showNotification(newGear, "New Gear Available", vibrationEnabled)
-            
-            if (soundEnabled && newEggs.isEmpty()) { // Only play sound once if both eggs and gear have updates
+
                 playUrgentSound()
-            }
-            
-            if (vibrationEnabled && newEggs.isEmpty()) { // Only vibrate once if both eggs and gear have updates
+
                 vibrate()
-            }
+
+        }
+        
+        // Show notification for event stocks if needed
+        if (newEventStocks.isNotEmpty()) {
+            showNotification(newEventStocks, "New Event Items Available", vibrationEnabled)
+
+                playUrgentSound()
+
+                vibrate()
+
         }
     }
     
@@ -229,6 +290,13 @@ class NotificationSoundService(private val context: Context) {
         
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        // Create stop sound intent
+        val stopIntent = Intent(ACTION_STOP_SOUND)
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context, 0, stopIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
@@ -246,8 +314,7 @@ class NotificationSoundService(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-        
-        // We don't set vibration on the notification anymore since we're handling it separately
+            .addAction(R.drawable.ic_launcher_foreground, "Stop Sound", stopPendingIntent)
         
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
@@ -300,6 +367,36 @@ class NotificationSoundService(private val context: Context) {
         }
     }
     
+    private fun stopSoundAndVibration() {
+        // Stop media player
+        mediaPlayer?.apply {
+            if (isPlaying) {
+                stop()
+            }
+            release()
+            mediaPlayer = null
+        }
+        
+        // Stop vibration
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                val vibrator = vibratorManager.defaultVibrator
+                vibrator.cancel()
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                vibrator.cancel()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
+        // Clear the notification
+        val notificationManager = NotificationManagerCompat.from(context)
+        notificationManager.cancel(NOTIFICATION_ID)
+    }
+    
     fun release() {
         // Remove Firebase listener
         firebaseListener?.let {
@@ -311,5 +408,12 @@ class NotificationSoundService(private val context: Context) {
         // Release MediaPlayer
         mediaPlayer?.release()
         mediaPlayer = null
+        
+        // Unregister broadcast receiver
+        try {
+            context.unregisterReceiver(stopSoundReceiver)
+        } catch (e: Exception) {
+            // Receiver might not be registered
+        }
     }
 } 

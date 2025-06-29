@@ -263,6 +263,23 @@ fun GardenDataContent(gardenData: GardenData) {
                 items(gearData.items) { item ->
                     ItemRow(item = item)
                 }
+                
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+            
+            // Event Stocks section
+            gardenData.datas.eventStocks?.let { eventStocksData ->
+                item {
+                    CategoryHeader(title = "Event Items", updatedAt = eventStocksData.updatedAt)
+                }
+                
+                items(eventStocksData.items) { item ->
+                    ItemRow(item = item)
+                }
             }
             
             item {
