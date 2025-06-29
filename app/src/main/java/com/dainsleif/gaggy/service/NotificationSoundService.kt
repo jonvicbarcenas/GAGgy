@@ -14,6 +14,8 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -28,6 +30,8 @@ import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Locale
+import java.util.UUID
 
 class NotificationSoundService(private val context: Context) {
 
@@ -49,6 +53,10 @@ class NotificationSoundService(private val context: Context) {
     private var previousEventData: Map<String, List<ItemData>> = mapOf()
     private var firebaseListener: ValueEventListener? = null
     
+    // Text to speech
+    private var textToSpeech: TextToSpeech? = null
+    private var isTtsReady = false
+    
     // Action for stop button
     private val ACTION_STOP_SOUND = "com.dainsleif.gaggy.STOP_SOUND"
     private val stopSoundReceiver = object : BroadcastReceiver() {
@@ -64,6 +72,29 @@ class NotificationSoundService(private val context: Context) {
         setupFirebaseListener()
         // Register the broadcast receiver
         context.registerReceiver(stopSoundReceiver, IntentFilter(ACTION_STOP_SOUND))
+        // Initialize Text-to-Speech
+        initTextToSpeech()
+    }
+    
+    private fun initTextToSpeech() {
+        textToSpeech = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = textToSpeech?.setLanguage(Locale.US)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    // Language not supported
+                } else {
+                    isTtsReady = true
+                }
+            }
+        }
+        
+        textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            
+            override fun onDone(utteranceId: String?) {}
+            
+            override fun onError(utteranceId: String?) {}
+        })
     }
     
     private fun createNotificationChannel() {
@@ -112,6 +143,7 @@ class NotificationSoundService(private val context: Context) {
         val allNotificationsEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}all_notifications", true)
         val soundEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}sound", true)
         val vibrationEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}vibration", true)
+        val ttsEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}text_to_speech", true)
         
         if (!allNotificationsEnabled) {
             return
@@ -260,26 +292,34 @@ class NotificationSoundService(private val context: Context) {
                 playUrgentSound()
                 vibrate()
             }
+            
+            if (ttsEnabled) {
+                speakNotification("New Eggs Available", newEggs)
+            }
         }
         
         // Show notification for gear if needed
         if (newGear.isNotEmpty()) {
             showNotification(newGear, "New Gear Available", vibrationEnabled)
 
-                playUrgentSound()
-
-                vibrate()
-
+            playUrgentSound()
+            vibrate()
+            
+            if (ttsEnabled) {
+                speakNotification("New Gear Available", newGear)
+            }
         }
         
         // Show notification for event stocks if needed
         if (newEventStocks.isNotEmpty()) {
             showNotification(newEventStocks, "New Event Items Available", vibrationEnabled)
 
-                playUrgentSound()
-
-                vibrate()
-
+            playUrgentSound()
+            vibrate()
+            
+            if (ttsEnabled) {
+                speakNotification("New Event Items Available", newEventStocks)
+            }
         }
     }
     
@@ -367,6 +407,23 @@ class NotificationSoundService(private val context: Context) {
         }
     }
     
+    private fun speakNotification(title: String, items: List<String>) {
+        if (!isTtsReady || textToSpeech == null) return
+        
+        val textToSpeak = if (items.size == 1) {
+            "$title. New ${items.first()} available!"
+        } else {
+            "$title. New items available: ${items.joinToString(", ")}"
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            textToSpeech?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, UUID.randomUUID().toString())
+        } else {
+            @Suppress("DEPRECATION")
+            textToSpeech?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null)
+        }
+    }
+    
     private fun stopSoundAndVibration() {
         // Stop media player
         mediaPlayer?.apply {
@@ -392,6 +449,9 @@ class NotificationSoundService(private val context: Context) {
             e.printStackTrace()
         }
         
+        // Stop TTS
+        textToSpeech?.stop()
+        
         // Clear the notification
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancel(NOTIFICATION_ID)
@@ -408,6 +468,11 @@ class NotificationSoundService(private val context: Context) {
         // Release MediaPlayer
         mediaPlayer?.release()
         mediaPlayer = null
+        
+        // Shutdown TTS
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
+        textToSpeech = null
         
         // Unregister broadcast receiver
         try {

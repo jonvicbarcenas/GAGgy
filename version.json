@@ -11,6 +11,8 @@
   "Added event stock notifications for special and seasonal items + v2.0.7",
   "Added support for additional event items (Oasis Egg, Mutation Spray) + v2.0.7",
   "Improved notification settings with tabbed interface for better organization + v2.0.7",
-  "Added stop button to notifications to immediately stop sound and vibration + v2.0.8"
+  "Added stop button to notifications to immediately stop sound and vibration + v2.0.8",
+  "Added text-to-speech functionality to announce new items when notifications appear + v2.0.8",
+  "Added text-to-speech toggle option in About screen for easy configuration + v2.0.8"
 ]
 }

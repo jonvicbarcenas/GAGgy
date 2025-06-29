@@ -1,5 +1,6 @@
 package com.dainsleif.gaggy.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
@@ -45,7 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Constants for SharedPreferences
+private const val PREFS_NAME = "GardenEggPrefs"
+private const val PREF_PREFIX_SETTING = "setting_"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GardenListScreen(
@@ -69,6 +75,13 @@ fun GardenListScreen(
     onAboutClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    
+    // Text-to-speech state
+    var ttsEnabled by remember { 
+        mutableStateOf(sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}text_to_speech", true)) 
+    }
     
     Scaffold(
         topBar = {
@@ -109,6 +122,33 @@ fun GardenListScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
+                            // Text-to-Speech toggle
+                            DropdownMenuItem(
+                                text = { 
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Text-to-Speech")
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        if (ttsEnabled) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Enabled",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    val newValue = !ttsEnabled
+                                    ttsEnabled = newValue
+                                    sharedPrefs.edit().putBoolean("${PREF_PREFIX_SETTING}text_to_speech", newValue).apply()
+                                }
+                            )
+                            
+                            Divider()
+                            
                             DropdownMenuItem(
                                 text = { Text("Check for Updates") },
                                 onClick = {

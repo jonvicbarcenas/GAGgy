@@ -1,8 +1,10 @@
 package com.dainsleif.gaggy.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,10 +29,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,10 +46,21 @@ import androidx.compose.ui.unit.sp
 import com.dainsleif.gaggy.BuildConfig
 import com.dainsleif.gaggy.R
 
+// Constant for SharedPreferences
+private const val PREFS_NAME = "GardenEggPrefs"
+private const val PREF_PREFIX_SETTING = "setting_"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBackPressed: () -> Unit) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    
+    // Text-to-speech state
+    var ttsEnabled by remember { 
+        mutableStateOf(sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}text_to_speech", true)) 
+    }
     
     Scaffold(
         topBar = {
@@ -99,8 +118,6 @@ fun AboutScreen(onBackPressed: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
-            Divider()
             Spacer(modifier = Modifier.height(24.dp))
             
             // App Description
@@ -198,7 +215,7 @@ fun AboutScreen(onBackPressed: () -> Unit) {
                     )
 
                     Text(
-                        text = "© Rain Lee",
+                        text = "© Rain Lee (jvypog26)",
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
