@@ -70,8 +70,12 @@ class NotificationSoundService(private val context: Context) {
     init {
         createNotificationChannel()
         setupFirebaseListener()
-        // Register the broadcast receiver
-        context.registerReceiver(stopSoundReceiver, IntentFilter(ACTION_STOP_SOUND))
+        // Register the broadcast receiver with the appropriate flag for Android 14+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(stopSoundReceiver, IntentFilter(ACTION_STOP_SOUND), Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(stopSoundReceiver, IntentFilter(ACTION_STOP_SOUND))
+        }
         // Initialize Text-to-Speech
         initTextToSpeech()
     }
