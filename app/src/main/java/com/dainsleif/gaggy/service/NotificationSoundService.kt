@@ -40,6 +40,7 @@ class NotificationSoundService(private val context: Context) {
     private val PREF_PREFIX_GEAR = "gear_"
     private val PREF_PREFIX_SETTING = "setting_"
     private val PREF_PREFIX_EVENT = "event_"
+    private val PREF_PREFIX_SEED = "seed_"
     
     private val NOTIFICATION_CHANNEL_ID = "garden_eggs_channel"
     private val NOTIFICATION_ID = 1001
@@ -51,6 +52,7 @@ class NotificationSoundService(private val context: Context) {
     private var previousEggData: Map<String, List<ItemData>> = mapOf()
     private var previousGearData: Map<String, List<ItemData>> = mapOf()
     private var previousEventData: Map<String, List<ItemData>> = mapOf()
+    private var previousSeedData: Map<String, List<ItemData>> = mapOf()
     private var firebaseListener: ValueEventListener? = null
     
     // Text to speech
@@ -70,7 +72,7 @@ class NotificationSoundService(private val context: Context) {
     init {
         createNotificationChannel()
         setupFirebaseListener()
-        // Register the broadcast receiver with the appropriate flag for Android 14+
+           // Register the broadcast receiver with the appropriate flag for Android 14+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(stopSoundReceiver, IntentFilter(ACTION_STOP_SOUND), Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -192,6 +194,28 @@ class NotificationSoundService(private val context: Context) {
             currentGear["Tanning Mirror"] = gearData.items.filter { it.name == "Tanning Mirror" }
         }
         
+        // Process seeds
+        val currentSeeds = mutableMapOf<String, List<ItemData>>()
+        val newSeeds = mutableListOf<String>()
+        
+        // Add seed items if available
+        gardenData.datas.stocks?.seeds?.let { seedsData ->
+            currentSeeds["Watermelon"] = seedsData.items.filter { it.name == "Watermelon" }
+            currentSeeds["Sugar Apple"] = seedsData.items.filter { it.name == "Sugar Apple" }
+            currentSeeds["Cauliflower"] = seedsData.items.filter { it.name == "Cauliflower" }
+            currentSeeds["Pineapple"] = seedsData.items.filter { it.name == "Pineapple" }
+            currentSeeds["Green Apple"] = seedsData.items.filter { it.name == "Green Apple" }
+            currentSeeds["Banana"] = seedsData.items.filter { it.name == "Banana" }
+            currentSeeds["Avocado"] = seedsData.items.filter { it.name == "Avocado" }
+            currentSeeds["Kiwi"] = seedsData.items.filter { it.name == "Kiwi" }
+            currentSeeds["Bell Pepper"] = seedsData.items.filter { it.name == "Bell Pepper" }
+            currentSeeds["Prickly Pear"] = seedsData.items.filter { it.name == "Prickly Pear" }
+            currentSeeds["Feijoa"] = seedsData.items.filter { it.name == "Feijoa" }
+            currentSeeds["Loquat"] = seedsData.items.filter { it.name == "Loquat" }
+            currentSeeds["Pitcher Plant"] = seedsData.items.filter { it.name == "Pitcher Plant" }
+            currentSeeds["Rafflesia"] = seedsData.items.filter { it.name == "Rafflesia" }
+        }
+        
         // Process event stocks
         val currentEventStocks = mutableMapOf<String, List<ItemData>>()
         val newEventStocks = mutableListOf<String>()
@@ -212,6 +236,9 @@ class NotificationSoundService(private val context: Context) {
         // Check if this is the first data load for eggs
         if (previousEggData.isEmpty()) {
             previousEggData = currentEggs
+            previousGearData = currentGear
+            previousEventData = currentEventStocks
+            previousSeedData = currentSeeds
         } else {
             // Check for changes in egg quantities
             for ((eggName, items) in currentEggs) {
@@ -233,12 +260,7 @@ class NotificationSoundService(private val context: Context) {
             
             // Update previous egg data
             previousEggData = currentEggs
-        }
-        
-        // Check if this is the first data load for gear
-        if (previousGearData.isEmpty()) {
-            previousGearData = currentGear
-        } else {
+            
             // Check for changes in gear quantities
             for ((gearName, items) in currentGear) {
                 val prefKey = PREF_PREFIX_GEAR + gearName.replace(" ", "_").lowercase()
@@ -259,12 +281,28 @@ class NotificationSoundService(private val context: Context) {
             
             // Update previous gear data
             previousGearData = currentGear
-        }
-        
-        // Check if this is the first data load for event stocks
-        if (previousEventData.isEmpty()) {
-            previousEventData = currentEventStocks
-        } else {
+            
+            // Check for changes in seeds quantities
+            for ((seedName, items) in currentSeeds) {
+                val prefKey = PREF_PREFIX_SEED + seedName.replace(" ", "_").lowercase()
+                val isSeedItemEnabled = sharedPrefs.getBoolean(prefKey, false)
+                
+                if (isSeedItemEnabled) {
+                    val previousItems = previousSeedData[seedName] ?: emptyList()
+                    val previousCount = previousItems.sumOf { it.quantity }
+                    val currentCount = items.sumOf { it.quantity }
+                    
+                    if (currentCount > previousCount) {
+                        // We have new seed items of this type
+                        val newCount = currentCount - previousCount
+                        newSeeds.add("$newCount $seedName")
+                    }
+                }
+            }
+            
+            // Update previous seed data
+            previousSeedData = currentSeeds
+            
             // Check for changes in event stock quantities
             for ((eventItemName, items) in currentEventStocks) {
                 val prefKey = PREF_PREFIX_EVENT + eventItemName.replace(" ", "_").lowercase()
@@ -299,6 +337,20 @@ class NotificationSoundService(private val context: Context) {
             
             if (ttsEnabled) {
                 speakNotification("New Eggs Available", newEggs)
+            }
+        }
+        
+        // Show notification for seeds if needed
+        if (newSeeds.isNotEmpty()) {
+            showNotification(newSeeds, "New Seeds Available", vibrationEnabled)
+            
+            if (soundEnabled || vibrationEnabled) {
+                playUrgentSound()
+                vibrate()
+            }
+            
+            if (ttsEnabled) {
+                speakNotification("New Seeds Available", newSeeds)
             }
         }
         

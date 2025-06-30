@@ -1,5 +1,5 @@
 {
-  "version": "v2.0.9",
+  "version": "v2.1.0",
   "url": "https://github.com/jonvicbarcenas/GAGgy/releases/tag/v2.0.5",
   "features": [
   "Removed redundant quantity indicator from item rows + v2.0.5",
@@ -14,6 +14,7 @@
   "Added stop button to notifications to immediately stop sound and vibration + v2.0.8",
   "Added text-to-speech functionality to announce new items when notifications appear + v2.0.8",
   "Added text-to-speech toggle option in About screen for easy configuration + v2.0.8",
-  "Fixed Android 14 compatibility with proper broadcast receiver registration + v2.0.9"
+  "Fixed Android 14 compatibility with proper broadcast receiver registration + v2.0.9",
+  "Added dedicated Seeds tab with notification toggles for 14 seed types + v2.1.0"
 ]
 }

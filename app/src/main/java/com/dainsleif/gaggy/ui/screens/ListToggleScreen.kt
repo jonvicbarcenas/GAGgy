@@ -51,6 +51,7 @@ private const val PREF_PREFIX_EGG = "egg_"
 private const val PREF_PREFIX_GEAR = "gear_"
 private const val PREF_PREFIX_SETTING = "setting_"
 private const val PREF_PREFIX_EVENT = "event_"
+private const val PREF_PREFIX_SEED = "seed_"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +60,7 @@ fun ListToggleScreen(onBackPressed: () -> Unit) {
     val context = LocalContext.current
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     
-    val tabs = listOf("Eggs", "Gear", "Events")
+    val tabs = listOf("Eggs", "Seeds", "Gear", "Events")
     
     // Custom green colors for tabs
     val tabBackgroundColor = Color(0xFF4CAF50)  // Medium green
@@ -121,8 +122,9 @@ fun ListToggleScreen(onBackPressed: () -> Unit) {
             
             when (selectedTabIndex) {
                 0 -> EggNotificationsTab(context, scrollState)
-                1 -> GearNotificationsTab(context, scrollState)
-                2 -> EventNotificationsTab(context, scrollState)
+                1 -> SeedNotificationsTab(context, scrollState)
+                2 -> GearNotificationsTab(context, scrollState)
+                3 -> EventNotificationsTab(context, scrollState)
             }
         }
     }
@@ -177,6 +179,44 @@ fun EggNotificationsTab(context: Context, scrollState: androidx.compose.foundati
         
         // Rare Summer Egg
         EggToggleItem(name = "Rare Summer Egg", context = context)
+    }
+}
+
+@Composable
+fun SeedNotificationsTab(context: Context, scrollState: androidx.compose.foundation.ScrollState) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Seed Notifications",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Seed items
+        SeedToggleItem(name = "Watermelon", context = context)
+        SeedToggleItem(name = "Sugar Apple", context = context)
+        SeedToggleItem(name = "Cauliflower", context = context)
+        SeedToggleItem(name = "Pineapple", context = context)
+        SeedToggleItem(name = "Green Apple", context = context)
+        SeedToggleItem(name = "Banana", context = context)
+        SeedToggleItem(name = "Avocado", context = context)
+        SeedToggleItem(name = "Kiwi", context = context)
+        SeedToggleItem(name = "Bell Pepper", context = context)
+        SeedToggleItem(name = "Prickly Pear", context = context)
+        SeedToggleItem(name = "Feijoa", context = context)
+        SeedToggleItem(name = "Loquat", context = context)
+        SeedToggleItem(name = "Pitcher Plant", context = context)
+        SeedToggleItem(name = "Rafflesia", context = context)
     }
 }
 
@@ -354,6 +394,57 @@ fun GearToggleItem(name: String, context: Context) {
 @Composable
 fun EventToggleItem(name: String, context: Context) {
     val prefKey = PREF_PREFIX_EVENT + name.replace(" ", "_").lowercase()
+    val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    
+    // Load saved preference or default to false
+    var isEnabled by remember { mutableStateOf(sharedPrefs.getBoolean(prefKey, false)) }
+    
+    // Save preference when toggle changes
+    DisposableEffect(isEnabled) {
+        sharedPrefs.edit().putBoolean(prefKey, isEnabled).apply()
+        onDispose { }
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = { newValue ->
+                    isEnabled = newValue
+                    // Save to SharedPreferences
+                    sharedPrefs.edit().putBoolean(prefKey, newValue).apply()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun SeedToggleItem(name: String, context: Context) {
+    val prefKey = PREF_PREFIX_SEED + name.replace(" ", "_").lowercase()
     val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     
     // Load saved preference or default to false
