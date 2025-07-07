@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,9 +57,12 @@ import com.dainsleif.gaggy.model.CategoryData
 import com.dainsleif.gaggy.model.EggData
 import com.dainsleif.gaggy.model.GardenData
 import com.dainsleif.gaggy.model.ItemData
+import com.dainsleif.gaggy.model.WeatherData
+import com.dainsleif.gaggy.model.WeatherItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 // Constants for SharedPreferences
 private const val PREFS_NAME = "GardenEggPrefs"
@@ -72,7 +76,8 @@ fun GardenListScreen(
     error: String?,
     onNotificationClick: () -> Unit,
     onCheckForUpdates: () -> Unit = {},
-    onAboutClick: () -> Unit = {}
+    onAboutClick: () -> Unit = {},
+    onBatteryOptimizationClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -88,7 +93,7 @@ fun GardenListScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = "gaggy",
+                        text = "GAG Stocks",
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -154,6 +159,14 @@ fun GardenListScreen(
                                 onClick = {
                                     showMenu = false
                                     onCheckForUpdates()
+                                }
+                            )
+                            
+                            DropdownMenuItem(
+                                text = { Text("Disable Battery Optimization") },
+                                onClick = {
+                                    showMenu = false
+                                    onBatteryOptimizationClick()
                                 }
                             )
                             
@@ -257,7 +270,24 @@ fun GardenDataContent(gardenData: GardenData) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                GardenHeader()
+//                GardenHeader()
+            }
+
+            // Weather section
+            gardenData.datas.weather?.let { weatherData ->
+                item {
+                    CategoryHeader(title = "Weather", updatedAt = weatherData.updatedAt)
+                }
+                
+                item {
+                    WeatherSection(weatherData = weatherData)
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
 
             // Eggs section
@@ -308,17 +338,6 @@ fun GardenDataContent(gardenData: GardenData) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Divider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), thickness = 1.dp)
                     Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-            
-            // Event Stocks section
-            gardenData.datas.eventStocks?.let { eventStocksData ->
-                item {
-                    CategoryHeader(title = "Event Items", updatedAt = eventStocksData.updatedAt)
-                }
-                
-                items(eventStocksData.items) { item ->
-                    ItemRow(item = item)
                 }
             }
             
@@ -436,4 +455,107 @@ fun ItemRow(item: ItemData) {
             )
         }
     }
-} 
+}
+
+@Composable
+fun WeatherSection(weatherData: WeatherData) {
+    // Use remember and mutableStateOf to create a state that will trigger recomposition
+    var currentTimeMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    
+    // Use LaunchedEffect to set up a timer that updates the current time every minute
+    LaunchedEffect(key1 = true) {
+        while (true) {
+            delay(60000) // Update every minute (60000 milliseconds)
+            currentTimeMillis = System.currentTimeMillis()
+        }
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            for (item in weatherData.items) {
+                // Skip the Timestamp field as it's not user-friendly
+                if (item.name == "Timestamp") continue
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Highlight the Special field with a different style
+                    val isSpecial = item.name == "Special"
+                    
+                    Text(
+                        text = "${item.name}:",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSpecial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.width(100.dp)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    // Convert Discord timestamp format to relative time if it's an "Ends" field
+                    // Using currentTimeMillis in the calculation will cause this to update when the state changes
+                    val displayText = if (item.name == "Ends" && item.value.startsWith("<t:") && item.value.contains(":R>")) {
+                        try {
+                            val timestamp = item.value.substringAfter("<t:").substringBefore(":R>").toLong() * 1000 // Convert to milliseconds
+                            val diff = timestamp - currentTimeMillis
+                            
+                            when {
+                                diff < 0 -> {
+                                    // Past time
+                                    val absDiff = Math.abs(diff)
+                                    when {
+                                        absDiff < 60000 -> "just now"
+                                        absDiff < 3600000 -> "${absDiff / 60000} minutes ago"
+                                        absDiff < 86400000 -> "${absDiff / 3600000} hours ago"
+                                        absDiff < 604800000 -> "${absDiff / 86400000} days ago"
+                                        else -> "${absDiff / 604800000} weeks ago"
+                                    }
+                                }
+                                diff < 60000 -> "in less than a minute"
+                                diff < 3600000 -> "in ${diff / 60000} minutes"
+                                diff < 86400000 -> "in ${diff / 3600000} hours"
+                                diff < 604800000 -> "in ${diff / 86400000} days"
+                                else -> "in ${diff / 604800000} weeks"
+                            }
+                        } catch (e: Exception) {
+                            item.value // If parsing fails, show original value
+                        }
+                    } else {
+                        item.value
+                    }
+                    
+                    Text(
+                        text = displayText,
+                        fontSize = 16.sp,
+                        fontWeight = if (isSpecial) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSpecial) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                if (weatherData.items.indexOf(item) < weatherData.items.size - 1 && 
+                    weatherData.items.getOrNull(weatherData.items.indexOf(item) + 1)?.name != "Timestamp") {
+                    Divider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                    )
+                }
+            }
+        }
+    }
+}

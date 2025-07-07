@@ -1,9 +1,13 @@
 package com.dainsleif.gaggy
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -82,6 +86,9 @@ class MainActivity : ComponentActivity() {
                                 showUpdateDialog = true
                                 updateViewModel.checkForUpdates()
                             },
+                            onBatteryOptimizationClick = {
+                                openBatteryOptimizationSettings()
+                            },
                             onAboutClick = {
                                 navController.navigate("about")
                             }
@@ -143,4 +150,35 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-} 
+
+    // Function to open battery optimization settings
+    fun openBatteryOptimizationSettings() {
+        val intent = Intent()
+        val packageName = packageName
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        
+        // Show toast message about battery optimization
+        android.widget.Toast.makeText(
+            this,
+            "Please disable battery optimization for this app to receive notifications properly in the background",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (pm.isIgnoringBatteryOptimizations(packageName)) {
+                // If already ignoring battery optimization, open the full battery optimization settings
+                intent.action = Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+            } else {
+                // Request to ignore battery optimization for this app specifically
+                intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                intent.data = Uri.parse("package:$packageName")
+            }
+        } else {
+            // For older devices, just open the app settings
+            intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+            intent.data = Uri.parse("package:$packageName")
+        }
+        
+        startActivity(intent)
+    }
+}

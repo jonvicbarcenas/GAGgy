@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "datas": {
+      "stocks": {
+        ".read": true,
+        ".write": true
+      },
+      "eggs": {
+        ".read": true,
+        ".write": true
+      },
+      "eventStocks": {
+        ".read": true,
+        ".write": true
+      },
+      "weather": {
+        ".read": true,
+        ".write": true
+      },
+      "devices": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    ".read": true,
+    ".write": false
+  }
+} 

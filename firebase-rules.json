@@ -1,0 +1,14 @@
+﻿{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "connections": {
+      ".read": true,
+      ".write": true
+    },
+    "devices": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

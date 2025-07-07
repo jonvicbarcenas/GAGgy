@@ -49,8 +49,6 @@ import androidx.compose.ui.unit.sp
 private const val PREFS_NAME = "GardenEggPrefs"
 private const val PREF_PREFIX_EGG = "egg_"
 private const val PREF_PREFIX_GEAR = "gear_"
-private const val PREF_PREFIX_SETTING = "setting_"
-private const val PREF_PREFIX_EVENT = "event_"
 private const val PREF_PREFIX_SEED = "seed_"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,7 +58,7 @@ fun ListToggleScreen(onBackPressed: () -> Unit) {
     val context = LocalContext.current
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     
-    val tabs = listOf("Eggs", "Seeds", "Gear", "Events")
+    val tabs = listOf("Eggs", "Seeds", "Gear")
     
     // Custom green colors for tabs
     val tabBackgroundColor = Color(0xFF4CAF50)  // Medium green
@@ -124,7 +122,6 @@ fun ListToggleScreen(onBackPressed: () -> Unit) {
                 0 -> EggNotificationsTab(context, scrollState)
                 1 -> SeedNotificationsTab(context, scrollState)
                 2 -> GearNotificationsTab(context, scrollState)
-                3 -> EventNotificationsTab(context, scrollState)
             }
         }
     }
@@ -204,19 +201,16 @@ fun SeedNotificationsTab(context: Context, scrollState: androidx.compose.foundat
         
         // Seed items
         SeedToggleItem(name = "Watermelon", context = context)
+        SeedToggleItem(name = "Dragon Fruit", context = context)
+        SeedToggleItem(name = "Mango", context = context)
+        SeedToggleItem(name = "Grape", context = context)
+        SeedToggleItem(name = "Mushroom", context = context)
+        SeedToggleItem(name = "Pepper", context = context)
+        SeedToggleItem(name = "Cacao", context = context)
+        SeedToggleItem(name = "Beanstalk", context = context)
+        SeedToggleItem(name = "Ember Lily", context = context)
         SeedToggleItem(name = "Sugar Apple", context = context)
-        SeedToggleItem(name = "Cauliflower", context = context)
-        SeedToggleItem(name = "Pineapple", context = context)
-        SeedToggleItem(name = "Green Apple", context = context)
-        SeedToggleItem(name = "Banana", context = context)
-        SeedToggleItem(name = "Avocado", context = context)
-        SeedToggleItem(name = "Kiwi", context = context)
-        SeedToggleItem(name = "Bell Pepper", context = context)
-        SeedToggleItem(name = "Prickly Pear", context = context)
-        SeedToggleItem(name = "Feijoa", context = context)
-        SeedToggleItem(name = "Loquat", context = context)
-        SeedToggleItem(name = "Pitcher Plant", context = context)
-        SeedToggleItem(name = "Rafflesia", context = context)
+        SeedToggleItem(name = "Burning Bud", context = context)
     }
 }
 
@@ -254,38 +248,6 @@ fun GearNotificationsTab(context: Context, scrollState: androidx.compose.foundat
         GearToggleItem(name = "Friendship Pot", context = context)
         GearToggleItem(name = "Cleaning Spray", context = context)
         GearToggleItem(name = "Tanning Mirror", context = context)
-    }
-}
-
-@Composable
-fun EventNotificationsTab(context: Context, scrollState: androidx.compose.foundation.ScrollState) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(scrollState),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = "Event Notifications",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Event stock items
-        EventToggleItem(name = "Delphinium", context = context)
-        EventToggleItem(name = "Lily of the Valley", context = context)
-        EventToggleItem(name = "Traveler's Fruit", context = context)
-        EventToggleItem(name = "Oasis Egg", context = context)
-        EventToggleItem(name = "Summer Seed Pack", context = context)
-        EventToggleItem(name = "Oasis Crate", context = context)
-        EventToggleItem(name = "Mutation Spray Burnt", context = context)
-        EventToggleItem(name = "Hamster", context = context)
     }
 }
 
@@ -343,57 +305,6 @@ fun EggToggleItem(name: String, context: Context) {
 @Composable
 fun GearToggleItem(name: String, context: Context) {
     val prefKey = PREF_PREFIX_GEAR + name.replace(" ", "_").lowercase()
-    val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    
-    // Load saved preference or default to false
-    var isEnabled by remember { mutableStateOf(sharedPrefs.getBoolean(prefKey, false)) }
-    
-    // Save preference when toggle changes
-    DisposableEffect(isEnabled) {
-        sharedPrefs.edit().putBoolean(prefKey, isEnabled).apply()
-        onDispose { }
-    }
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = name,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            Switch(
-                checked = isEnabled,
-                onCheckedChange = { newValue ->
-                    isEnabled = newValue
-                    // Save to SharedPreferences
-                    sharedPrefs.edit().putBoolean(prefKey, newValue).apply()
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun EventToggleItem(name: String, context: Context) {
-    val prefKey = PREF_PREFIX_EVENT + name.replace(" ", "_").lowercase()
     val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     
     // Load saved preference or default to false

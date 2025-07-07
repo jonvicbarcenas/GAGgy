@@ -49,6 +49,16 @@
             </intent-filter>
         </receiver>
         
+        <!-- App Update Receiver to detect app updates -->
+        <receiver
+            android:name=".receiver.AppUpdateReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        
     </application>
 
 </manifest>

@@ -35,14 +35,17 @@ import java.util.UUID
 
 class NotificationSoundService(private val context: Context) {
 
+    companion object {
+        const val NOTIFICATION_CHANNEL_ID = "garden_notification_channel"
+        const val ACTION_STOP_SOUND = "com.dainsleif.gaggy.STOP_SOUND"
+    }
+    
     private val PREFS_NAME = "GardenEggPrefs"
     private val PREF_PREFIX_EGG = "egg_"
     private val PREF_PREFIX_GEAR = "gear_"
     private val PREF_PREFIX_SETTING = "setting_"
-    private val PREF_PREFIX_EVENT = "event_"
     private val PREF_PREFIX_SEED = "seed_"
     
-    private val NOTIFICATION_CHANNEL_ID = "garden_eggs_channel"
     private val NOTIFICATION_ID = 1001
     
     // Duration for continuous vibration (3000ms = 3 seconds)
@@ -51,7 +54,6 @@ class NotificationSoundService(private val context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private var previousEggData: Map<String, List<ItemData>> = mapOf()
     private var previousGearData: Map<String, List<ItemData>> = mapOf()
-    private var previousEventData: Map<String, List<ItemData>> = mapOf()
     private var previousSeedData: Map<String, List<ItemData>> = mapOf()
     private var firebaseListener: ValueEventListener? = null
     
@@ -60,7 +62,6 @@ class NotificationSoundService(private val context: Context) {
     private var isTtsReady = false
     
     // Action for stop button
-    private val ACTION_STOP_SOUND = "com.dainsleif.gaggy.STOP_SOUND"
     private val stopSoundReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == ACTION_STOP_SOUND) {
@@ -144,20 +145,19 @@ class NotificationSoundService(private val context: Context) {
     }
     
     private fun processGardenData(gardenData: GardenData) {
-        // Check if all notifications are enabled
+        // Shared preferences for notification toggles
         val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allNotificationsEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}all_notifications", true)
         val soundEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}sound", true)
         val vibrationEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}vibration", true)
         val ttsEnabled = sharedPrefs.getBoolean("${PREF_PREFIX_SETTING}text_to_speech", true)
         
-        if (!allNotificationsEnabled) {
-            return
-        }
-        
-        // Process eggs
-        val currentEggs = mutableMapOf<String, List<ItemData>>()
+        // Lists to store new items
         val newEggs = mutableListOf<String>()
+        val newGear = mutableListOf<String>()
+        val newSeeds = mutableListOf<String>()
+        
+        // Process eggs data
+        val currentEggs = mutableMapOf<String, List<ItemData>>()
         
         // Add eggs
         gardenData.datas.eggs?.let { eggData ->
@@ -173,9 +173,8 @@ class NotificationSoundService(private val context: Context) {
             currentEggs["Rare Summer Egg"] = eggData.items.filter { it.name == "Rare Summer Egg" }
         }
         
-        // Process gear
+        // Process gear data
         val currentGear = mutableMapOf<String, List<ItemData>>()
-        val newGear = mutableListOf<String>()
         
         // Add gear items if available
         gardenData.datas.stocks?.gear?.let { gearData ->
@@ -194,50 +193,28 @@ class NotificationSoundService(private val context: Context) {
             currentGear["Tanning Mirror"] = gearData.items.filter { it.name == "Tanning Mirror" }
         }
         
-        // Process seeds
+        // Process seeds data
         val currentSeeds = mutableMapOf<String, List<ItemData>>()
-        val newSeeds = mutableListOf<String>()
         
         // Add seed items if available
         gardenData.datas.stocks?.seeds?.let { seedsData ->
             currentSeeds["Watermelon"] = seedsData.items.filter { it.name == "Watermelon" }
+            currentSeeds["Dragon Fruit"] = seedsData.items.filter { it.name == "Dragon Fruit" }
+            currentSeeds["Mango"] = seedsData.items.filter { it.name == "Mango" }
+            currentSeeds["Grape"] = seedsData.items.filter { it.name == "Grape" }
+            currentSeeds["Mushroom"] = seedsData.items.filter { it.name == "Mushroom" }
+            currentSeeds["Pepper"] = seedsData.items.filter { it.name == "Pepper" }
+            currentSeeds["Cacao"] = seedsData.items.filter { it.name == "Cacao" }
+            currentSeeds["Beanstalk"] = seedsData.items.filter { it.name == "Beanstalk" }
+            currentSeeds["Ember Lily"] = seedsData.items.filter { it.name == "Ember Lily" }
             currentSeeds["Sugar Apple"] = seedsData.items.filter { it.name == "Sugar Apple" }
-            currentSeeds["Cauliflower"] = seedsData.items.filter { it.name == "Cauliflower" }
-            currentSeeds["Pineapple"] = seedsData.items.filter { it.name == "Pineapple" }
-            currentSeeds["Green Apple"] = seedsData.items.filter { it.name == "Green Apple" }
-            currentSeeds["Banana"] = seedsData.items.filter { it.name == "Banana" }
-            currentSeeds["Avocado"] = seedsData.items.filter { it.name == "Avocado" }
-            currentSeeds["Kiwi"] = seedsData.items.filter { it.name == "Kiwi" }
-            currentSeeds["Bell Pepper"] = seedsData.items.filter { it.name == "Bell Pepper" }
-            currentSeeds["Prickly Pear"] = seedsData.items.filter { it.name == "Prickly Pear" }
-            currentSeeds["Feijoa"] = seedsData.items.filter { it.name == "Feijoa" }
-            currentSeeds["Loquat"] = seedsData.items.filter { it.name == "Loquat" }
-            currentSeeds["Pitcher Plant"] = seedsData.items.filter { it.name == "Pitcher Plant" }
-            currentSeeds["Rafflesia"] = seedsData.items.filter { it.name == "Rafflesia" }
-        }
-        
-        // Process event stocks
-        val currentEventStocks = mutableMapOf<String, List<ItemData>>()
-        val newEventStocks = mutableListOf<String>()
-        
-        // Add event stock items if available
-        gardenData.datas.eventStocks?.let { eventData ->
-            // Explicitly track specific event items
-            currentEventStocks["Delphinium"] = eventData.items.filter { it.name == "Delphinium" }
-            currentEventStocks["Lily of the Valley"] = eventData.items.filter { it.name == "Lily of the Valley" }
-            currentEventStocks["Traveler's Fruit"] = eventData.items.filter { it.name == "Traveler's Fruit" }
-            currentEventStocks["Oasis Egg"] = eventData.items.filter { it.name == "Oasis Egg" }
-            currentEventStocks["Summer Seed Pack"] = eventData.items.filter { it.name == "Summer Seed Pack" }
-            currentEventStocks["Oasis Crate"] = eventData.items.filter { it.name == "Oasis Crate" }
-            currentEventStocks["Mutation Spray Burnt"] = eventData.items.filter { it.name == "Mutation Spray Burnt" }
-            currentEventStocks["Hamster"] = eventData.items.filter { it.name == "Hamster" }
+            currentSeeds["Burning Bud"] = seedsData.items.filter { it.name == "Burning Bud" }
         }
         
         // Check if this is the first data load for eggs
         if (previousEggData.isEmpty()) {
             previousEggData = currentEggs
             previousGearData = currentGear
-            previousEventData = currentEventStocks
             previousSeedData = currentSeeds
         } else {
             // Check for changes in egg quantities
@@ -302,27 +279,6 @@ class NotificationSoundService(private val context: Context) {
             
             // Update previous seed data
             previousSeedData = currentSeeds
-            
-            // Check for changes in event stock quantities
-            for ((eventItemName, items) in currentEventStocks) {
-                val prefKey = PREF_PREFIX_EVENT + eventItemName.replace(" ", "_").lowercase()
-                val isEventItemEnabled = sharedPrefs.getBoolean(prefKey, false)
-                
-                if (isEventItemEnabled) {
-                    val previousItems = previousEventData[eventItemName] ?: emptyList()
-                    val previousCount = previousItems.sumOf { it.quantity }
-                    val currentCount = items.sumOf { it.quantity }
-                    
-                    if (currentCount > previousCount) {
-                        // We have new event items of this type
-                        val newCount = currentCount - previousCount
-                        newEventStocks.add("$newCount $eventItemName")
-                    }
-                }
-            }
-            
-            // Update previous event data
-            previousEventData = currentEventStocks
         }
 
         
@@ -363,18 +319,6 @@ class NotificationSoundService(private val context: Context) {
             
             if (ttsEnabled) {
                 speakNotification("New Gear Available", newGear)
-            }
-        }
-        
-        // Show notification for event stocks if needed
-        if (newEventStocks.isNotEmpty()) {
-            showNotification(newEventStocks, "New Event Items Available", vibrationEnabled)
-
-            playUrgentSound()
-            vibrate()
-            
-            if (ttsEnabled) {
-                speakNotification("New Event Items Available", newEventStocks)
             }
         }
     }

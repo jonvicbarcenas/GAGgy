@@ -7,7 +7,7 @@ data class GardenData(
 data class DataContainer(
     val eggs: EggData? = null,
     val stocks: StocksData? = null,
-    val eventStocks: CategoryData? = null
+    val weather: WeatherData? = null
 )
 
 data class EggData(
@@ -25,6 +25,17 @@ data class CategoryData(
     val items: List<ItemData> = emptyList(),
     val timestamp: Long = 0,
     val updatedAt: Long = 0
+)
+
+data class WeatherData(
+    val items: List<WeatherItem> = emptyList(),
+    val timestamp: Long = 0,
+    val updatedAt: Long = 0
+)
+
+data class WeatherItem(
+    val name: String = "",
+    val value: String = ""
 )
 
 data class ItemData(
