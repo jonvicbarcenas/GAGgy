@@ -202,6 +202,9 @@ class NotificationSoundService(private val context: Context) {
         // Add seed items if available
         gardenData.datas.stocks?.seeds?.let { seedsData ->
             currentSeeds["Watermelon"] = seedsData.items.filter { it.name == "Watermelon" }
+            currentSeeds["Pumpkin"] = seedsData.items.filter { it.name == "Pumpkin" }
+            currentSeeds["Coconut"] = seedsData.items.filter { it.name == "Coconut" }
+            currentSeeds["Cactus"] = seedsData.items.filter { it.name == "Cactus" }
             currentSeeds["Dragon Fruit"] = seedsData.items.filter { it.name == "Dragon Fruit" }
             currentSeeds["Mango"] = seedsData.items.filter { it.name == "Mango" }
             currentSeeds["Grape"] = seedsData.items.filter { it.name == "Grape" }
@@ -212,6 +215,7 @@ class NotificationSoundService(private val context: Context) {
             currentSeeds["Ember Lily"] = seedsData.items.filter { it.name == "Ember Lily" }
             currentSeeds["Sugar Apple"] = seedsData.items.filter { it.name == "Sugar Apple" }
             currentSeeds["Burning Bud"] = seedsData.items.filter { it.name == "Burning Bud" }
+            currentSeeds["Giant Pinecone"] = seedsData.items.filter { it.name == "Giant Pinecone" }
         }
         
         // Check if this is the first data load for eggs
