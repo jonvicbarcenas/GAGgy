@@ -179,6 +179,9 @@ class NotificationSoundService(private val context: Context) {
         // Add gear items if available
         gardenData.datas.stocks?.gear?.let { gearData ->
             currentGear["Watering Can"] = gearData.items.filter { it.name == "Watering Can" }
+            currentGear["Levelup Lollipop"] = gearData.items.filter { it.name == "Levelup Lollipop" }
+            currentGear["Medium Toy"] = gearData.items.filter { it.name == "Medium Toy" }
+            currentGear["Medium Treat"] = gearData.items.filter { it.name == "Medium Treat" }
             currentGear["Trowel"] = gearData.items.filter { it.name == "Trowel" }
             currentGear["Favorite Tool"] = gearData.items.filter { it.name == "Favorite Tool" }
             currentGear["Basic Sprinkler"] = gearData.items.filter { it.name == "Basic Sprinkler" }
