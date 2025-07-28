@@ -214,6 +214,7 @@ fun SeedNotificationsTab(context: Context, scrollState: androidx.compose.foundat
         SeedToggleItem(name = "Ember Lily", context = context)
         SeedToggleItem(name = "Sugar Apple", context = context)
         SeedToggleItem(name = "Burning Bud", context = context)
+        SeedToggleItem(name = "Elder Strawberry", context = context)
         SeedToggleItem(name = "Giant Pinecone", context = context)
     }
 }

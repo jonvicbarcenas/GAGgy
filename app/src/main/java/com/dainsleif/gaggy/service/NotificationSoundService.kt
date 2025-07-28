@@ -215,6 +215,7 @@ class NotificationSoundService(private val context: Context) {
             currentSeeds["Ember Lily"] = seedsData.items.filter { it.name == "Ember Lily" }
             currentSeeds["Sugar Apple"] = seedsData.items.filter { it.name == "Sugar Apple" }
             currentSeeds["Burning Bud"] = seedsData.items.filter { it.name == "Burning Bud" }
+            currentSeeds["Elder Strawberry"] = seedsData.items.filter { it.name == "Elder Strawberry" }
             currentSeeds["Giant Pinecone"] = seedsData.items.filter { it.name == "Giant Pinecone" }
         }
         
