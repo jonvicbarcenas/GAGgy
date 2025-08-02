@@ -180,6 +180,7 @@ class NotificationSoundService(private val context: Context) {
         gardenData.datas.stocks?.gear?.let { gearData ->
             currentGear["Watering Can"] = gearData.items.filter { it.name == "Watering Can" }
             currentGear["Levelup Lollipop"] = gearData.items.filter { it.name == "Levelup Lollipop" }
+            currentGear["Trading Ticket"] = gearData.items.filter { it.name == "Trading Ticket" }
             currentGear["Medium Toy"] = gearData.items.filter { it.name == "Medium Toy" }
             currentGear["Medium Treat"] = gearData.items.filter { it.name == "Medium Treat" }
             currentGear["Trowel"] = gearData.items.filter { it.name == "Trowel" }

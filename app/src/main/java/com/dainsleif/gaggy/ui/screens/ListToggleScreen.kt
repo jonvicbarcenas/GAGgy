@@ -242,6 +242,7 @@ fun GearNotificationsTab(context: Context, scrollState: androidx.compose.foundat
         // Gear items
         GearToggleItem(name = "Watering Can", context = context)
         GearToggleItem(name = "Levelup Lollipop", context = context)
+        GearToggleItem(name = "Trading Ticket", context = context)
         GearToggleItem(name = "Medium Toy", context = context)
         GearToggleItem(name = "Medium Treat", context = context)
         GearToggleItem(name = "Trowel", context = context)
