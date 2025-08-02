@@ -189,6 +189,7 @@ class NotificationSoundService(private val context: Context) {
             currentGear["Godly Sprinkler"] = gearData.items.filter { it.name == "Godly Sprinkler" }
             currentGear["Advanced Sprinkler"] = gearData.items.filter { it.name == "Advanced Sprinkler" }
             currentGear["Master Sprinkler"] = gearData.items.filter { it.name == "Master Sprinkler" }
+            currentGear["Grandmaster Sprinkler"] = gearData.items.filter { it.name == "Grandmaster Sprinkler" }
             currentGear["Magnifying Glass"] = gearData.items.filter { it.name == "Magnifying Glass" }
             currentGear["Recall Wrench"] = gearData.items.filter { it.name == "Recall Wrench" }
             currentGear["Harvest Tool"] = gearData.items.filter { it.name == "Harvest Tool" }

@@ -227,36 +227,37 @@ fun GearNotificationsTab(context: Context, scrollState: androidx.compose.foundat
             .padding(16.dp)
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = "Gear Notifications",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Gear items
-        GearToggleItem(name = "Watering Can", context = context)
-        GearToggleItem(name = "Levelup Lollipop", context = context)
-        GearToggleItem(name = "Trading Ticket", context = context)
-        GearToggleItem(name = "Medium Toy", context = context)
-        GearToggleItem(name = "Medium Treat", context = context)
-        GearToggleItem(name = "Trowel", context = context)
-        GearToggleItem(name = "Favorite Tool", context = context)
-        GearToggleItem(name = "Basic Sprinkler", context = context)
-        GearToggleItem(name = "Godly Sprinkler", context = context)
-        GearToggleItem(name = "Advanced Sprinkler", context = context)
-        GearToggleItem(name = "Master Sprinkler", context = context)
-        GearToggleItem(name = "Magnifying Glass", context = context)
-        GearToggleItem(name = "Recall Wrench", context = context)
-        GearToggleItem(name = "Harvest Tool", context = context)
-        GearToggleItem(name = "Friendship Pot", context = context)
-        GearToggleItem(name = "Cleaning Spray", context = context)
-        GearToggleItem(name = "Tanning Mirror", context = context)
+        ) {
+            Text(
+                text = "Gear Notifications",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Gear items
+            GearToggleItem(name = "Watering Can", context = context)
+            GearToggleItem(name = "Levelup Lollipop", context = context)
+            GearToggleItem(name = "Trading Ticket", context = context)
+            GearToggleItem(name = "Medium Toy", context = context)
+            GearToggleItem(name = "Medium Treat", context = context)
+            GearToggleItem(name = "Trowel", context = context)
+            GearToggleItem(name = "Favorite Tool", context = context)
+            GearToggleItem(name = "Basic Sprinkler", context = context)
+            GearToggleItem(name = "Godly Sprinkler", context = context)
+            GearToggleItem(name = "Advanced Sprinkler", context = context)
+            GearToggleItem(name = "Master Sprinkler", context = context)
+            GearToggleItem(name = "Grandmaster Sprinkler", context = context)
+            GearToggleItem(name = "Magnifying Glass", context = context)
+            GearToggleItem(name = "Recall Wrench", context = context)
+            GearToggleItem(name = "Harvest Tool", context = context)
+            GearToggleItem(name = "Friendship Pot", context = context)
+            GearToggleItem(name = "Cleaning Spray", context = context)
+            GearToggleItem(name = "Tanning Mirror", context = context)
     }
 }
 

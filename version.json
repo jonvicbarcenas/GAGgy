@@ -2,8 +2,9 @@
   "version": "v2.1.9",
   "url": "https://github.com/jonvicbarcenas/GAGgy/releases/tag/v2.1.9",
   "features": [
-    "2.2.0",
+    "2.2.1",
     "New Gear Toggle: Trading Ticket",
-    "New Custom sound"
+    "New Custom sound",
+    "New Gear Toggle: Grandmaster Sprinkler"
 ]
 }
