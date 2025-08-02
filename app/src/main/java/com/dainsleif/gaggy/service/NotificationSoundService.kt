@@ -296,7 +296,7 @@ class NotificationSoundService(private val context: Context) {
             showNotification(newEggs, "New Eggs Available", vibrationEnabled)
             
             if (soundEnabled || vibrationEnabled) {
-                playUrgentSound()
+                playNotificationSound()
                 vibrate()
             }
             
@@ -310,7 +310,7 @@ class NotificationSoundService(private val context: Context) {
             showNotification(newSeeds, "New Seeds Available", vibrationEnabled)
             
             if (soundEnabled || vibrationEnabled) {
-                playUrgentSound()
+                playNotificationSound()
                 vibrate()
             }
             
@@ -323,7 +323,7 @@ class NotificationSoundService(private val context: Context) {
         if (newGear.isNotEmpty()) {
             showNotification(newGear, "New Gear Available", vibrationEnabled)
 
-            playUrgentSound()
+            playNotificationSound()
             vibrate()
             
             if (ttsEnabled) {
@@ -372,14 +372,25 @@ class NotificationSoundService(private val context: Context) {
         }
     }
     
-    private fun playUrgentSound() {
+    private fun playNotificationSound() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // Release any existing MediaPlayer
                 mediaPlayer?.release()
                 
+                // Get selected sound from SharedPreferences
+                val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val selectedSound = sharedPrefs.getString("notification_sound", "urgent") ?: "urgent"
+                
+                // Determine which sound resource to use
+                val soundResource = when (selectedSound) {
+                    "pillarmen" -> R.raw.pillarmen
+                    "urgent" -> R.raw.urgent
+                    else -> R.raw.urgent // Default fallback
+                }
+                
                 // Create new MediaPlayer
-                mediaPlayer = MediaPlayer.create(context, R.raw.urgent)
+                mediaPlayer = MediaPlayer.create(context, soundResource)
                 mediaPlayer?.setOnCompletionListener {
                     it.release()
                     mediaPlayer = null

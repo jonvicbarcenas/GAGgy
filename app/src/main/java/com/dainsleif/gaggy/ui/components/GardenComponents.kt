@@ -53,6 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dainsleif.gaggy.R
+import com.dainsleif.gaggy.ui.components.SoundSelectionDialog
 import com.dainsleif.gaggy.model.CategoryData
 import com.dainsleif.gaggy.model.EggData
 import com.dainsleif.gaggy.model.GardenData
@@ -80,6 +82,7 @@ fun GardenListScreen(
     onBatteryOptimizationClick: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showSoundDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     
@@ -152,6 +155,15 @@ fun GardenListScreen(
                                 }
                             )
                             
+                            // Custom Sound Selection
+                            DropdownMenuItem(
+                                text = { Text("Custom Sound Selection") },
+                                onClick = {
+                                    showMenu = false
+                                    showSoundDialog = true
+                                }
+                            )
+                            
                             Divider()
                             
                             DropdownMenuItem(
@@ -204,6 +216,17 @@ fun GardenListScreen(
                 }
             }
         }
+    }
+    
+    // Show sound selection dialog when needed
+    if (showSoundDialog) {
+        SoundSelectionDialog(
+            onDismiss = { showSoundDialog = false },
+            onSoundSelected = { selectedSound ->
+                // Sound is already saved in the dialog, just dismiss
+                showSoundDialog = false
+            }
+        )
     }
 }
 
