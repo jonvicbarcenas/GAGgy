@@ -162,20 +162,8 @@ fun EggNotificationsTab(context: Context, scrollState: androidx.compose.foundati
         // Bug Egg
         EggToggleItem(name = "Bug Egg", context = context)
 
-        // Bee Egg
-        EggToggleItem(name = "Bee Egg", context = context)
-        
         // Mythical Egg
         EggToggleItem(name = "Mythical Egg", context = context)
-        
-        // Paradise Egg
-        EggToggleItem(name = "Paradise Egg", context = context)
-        
-        // Common Summer Egg
-        EggToggleItem(name = "Common Summer Egg", context = context)
-        
-        // Rare Summer Egg
-        EggToggleItem(name = "Rare Summer Egg", context = context)
     }
 }
 
@@ -216,6 +204,7 @@ fun SeedNotificationsTab(context: Context, scrollState: androidx.compose.foundat
         SeedToggleItem(name = "Burning Bud", context = context)
         SeedToggleItem(name = "Elder Strawberry", context = context)
         SeedToggleItem(name = "Giant Pinecone", context = context)
+        SeedToggleItem(name = "Romanesco", context = context)
     }
 }
 
@@ -257,7 +246,7 @@ fun GearNotificationsTab(context: Context, scrollState: androidx.compose.foundat
             GearToggleItem(name = "Harvest Tool", context = context)
             GearToggleItem(name = "Friendship Pot", context = context)
             GearToggleItem(name = "Cleaning Spray", context = context)
-            GearToggleItem(name = "Tanning Mirror", context = context)
+            GearToggleItem(name = "Cleansing Pet Shard", context = context)
     }
 }
 

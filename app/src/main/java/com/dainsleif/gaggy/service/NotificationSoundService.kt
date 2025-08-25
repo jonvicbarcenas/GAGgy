@@ -166,11 +166,7 @@ class NotificationSoundService(private val context: Context) {
             currentEggs["Uncommon Egg"] = eggData.items.filter { it.name == "Uncommon Egg" }
             currentEggs["Legendary Egg"] = eggData.items.filter { it.name == "Legendary Egg" }
             currentEggs["Bug Egg"] = eggData.items.filter { it.name == "Bug Egg" }
-            currentEggs["Bee Egg"] = eggData.items.filter { it.name == "Bee Egg" }
             currentEggs["Mythical Egg"] = eggData.items.filter { it.name == "Mythical Egg" }
-            currentEggs["Paradise Egg"] = eggData.items.filter { it.name == "Paradise Egg" }
-            currentEggs["Common Summer Egg"] = eggData.items.filter { it.name == "Common Summer Egg" }
-            currentEggs["Rare Summer Egg"] = eggData.items.filter { it.name == "Rare Summer Egg" }
         }
         
         // Process gear data
@@ -195,7 +191,7 @@ class NotificationSoundService(private val context: Context) {
             currentGear["Harvest Tool"] = gearData.items.filter { it.name == "Harvest Tool" }
             currentGear["Friendship Pot"] = gearData.items.filter { it.name == "Friendship Pot" }
             currentGear["Cleaning Spray"] = gearData.items.filter { it.name == "Cleaning Spray" }
-            currentGear["Tanning Mirror"] = gearData.items.filter { it.name == "Tanning Mirror" }
+            currentGear["Cleansing Pet Shard"] = gearData.items.filter { it.name == "Cleansing Pet Shard" }
         }
         
         // Process seeds data
@@ -219,6 +215,7 @@ class NotificationSoundService(private val context: Context) {
             currentSeeds["Burning Bud"] = seedsData.items.filter { it.name == "Burning Bud" }
             currentSeeds["Elder Strawberry"] = seedsData.items.filter { it.name == "Elder Strawberry" }
             currentSeeds["Giant Pinecone"] = seedsData.items.filter { it.name == "Giant Pinecone" }
+            currentSeeds["Romanesco"] = seedsData.items.filter { it.name == "Romanesco" }
         }
         
         // Check if this is the first data load for eggs
